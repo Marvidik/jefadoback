@@ -1,0 +1,1428 @@
+openapi: 3.0.3
+info:
+  title: Jefado Multivendor API
+  version: 1.0.0
+  description: Backend API for Jefado Multivendor Platform
+paths:
+  /api/v1/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: |-
+        Check the credentials and return the REST Token
+        if the credentials are valid and authenticated.
+        Calls Django Auth login method to register User ID
+        in Django session framework
+
+        Accept the following POST parameters: username, password
+        Return the REST Framework Token Object's key.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomLogin'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CustomLogin'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CustomLogin'
+        required: true
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JWT'
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: |-
+        Calls Django logout method and delete the Token object
+        assigned to the current User object.
+
+        Accepts/Returns nothing.
+      tags:
+      - auth
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestAuthDetail'
+          description: ''
+  /api/v1/auth/password/change/:
+    post:
+      operationId: auth_password_change_create
+      description: |-
+        Calls Django Auth SetPasswordForm save method.
+
+        Accepts the following POST parameters: new_password1, new_password2
+        Returns the success/fail message.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordChange'
+        required: true
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestAuthDetail'
+          description: ''
+  /api/v1/auth/password/reset/:
+    post:
+      operationId: auth_password_reset_create
+      description: |-
+        Calls Django Auth PasswordResetForm save method.
+
+        Accepts the following POST parameters: email
+        Returns the success/fail message.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordReset'
+        required: true
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestAuthDetail'
+          description: ''
+  /api/v1/auth/password/reset/confirm/:
+    post:
+      operationId: auth_password_reset_confirm_create
+      description: |-
+        Password reset e-mail link is confirmed, therefore
+        this resets the user's password.
+
+        Accepts the following POST parameters: token, uid,
+            new_password1, new_password2
+        Returns the success/fail message.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirm'
+        required: true
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestAuthDetail'
+          description: ''
+  /api/v1/auth/registration/:
+    post:
+      operationId: auth_registration_create
+      description: |-
+        Registers a new user.
+
+        Accepts the following POST parameters: username, email, password1, password2.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SellerRegister'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SellerRegister'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SellerRegister'
+        required: true
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JWT'
+          description: ''
+  /api/v1/auth/registration/resend-email/:
+    post:
+      operationId: auth_registration_resend_email_create
+      description: |-
+        Resends another email to an unverified email.
+
+        Accepts the following POST parameter: email.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResendEmailVerification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResendEmailVerification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResendEmailVerification'
+        required: true
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestAuthDetail'
+          description: ''
+  /api/v1/auth/registration/verify-email/:
+    post:
+      operationId: auth_registration_verify_email_create
+      description: |-
+        Verifies the email associated with the provided key.
+
+        Accepts the following POST parameter: key.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyEmail'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerifyEmail'
+        required: true
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RestAuthDetail'
+          description: ''
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/auth/token/verify/:
+    post:
+      operationId: auth_token_verify_create
+      description: |-
+        Takes a token and indicates if it is valid.  This view provides no
+        information about a token's fitness for a particular use.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenVerify'
+          description: ''
+  /api/v1/auth/user/:
+    get:
+      operationId: auth_user_retrieve
+      description: |-
+        Reads and updates UserModel fields
+        Accepts GET, PUT, PATCH methods.
+
+        Default accepted fields: username, first_name, last_name
+        Default display fields: pk, username, email, first_name, last_name
+        Read-only fields: pk, email
+
+        Returns UserModel fields.
+      tags:
+      - auth
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: auth_user_update
+      description: |-
+        Reads and updates UserModel fields
+        Accepts GET, PUT, PATCH methods.
+
+        Default accepted fields: username, first_name, last_name
+        Default display fields: pk, username, email, first_name, last_name
+        Read-only fields: pk, email
+
+        Returns UserModel fields.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_user_partial_update
+      description: |-
+        Reads and updates UserModel fields
+        Accepts GET, PUT, PATCH methods.
+
+        Default accepted fields: username, first_name, last_name
+        Default display fields: pk, username, email, first_name, last_name
+        Read-only fields: pk, email
+
+        Returns UserModel fields.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/sellers/dashboard/latest-orders/:
+    get:
+      operationId: sellers_dashboard_latest_orders_list
+      tags:
+      - sellers
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+          description: ''
+  /api/v1/sellers/dashboard/overview/:
+    get:
+      operationId: sellers_dashboard_overview_retrieve
+      tags:
+      - sellers
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardOverview'
+          description: ''
+  /api/v1/sellers/dashboard/revenue/:
+    get:
+      operationId: sellers_dashboard_revenue_retrieve
+      tags:
+      - sellers
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/v1/sellers/dashboard/stats/:
+    get:
+      operationId: sellers_dashboard_stats_retrieve
+      tags:
+      - sellers
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStats'
+          description: ''
+  /api/v1/sellers/kyc/update/:
+    post:
+      operationId: sellers_kyc_update_create
+      tags:
+      - sellers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SellerKYC'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SellerKYC'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SellerKYC'
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SellerKYC'
+          description: ''
+  /api/v1/sellers/orders/:
+    get:
+      operationId: sellers_orders_list
+      tags:
+      - sellers
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+          description: ''
+  /api/v1/sellers/orders/{id}/:
+    get:
+      operationId: sellers_orders_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this order.
+        required: true
+      tags:
+      - sellers
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+          description: ''
+  /api/v1/sellers/products/:
+    get:
+      operationId: sellers_products_list
+      tags:
+      - sellers
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+          description: ''
+    post:
+      operationId: sellers_products_create
+      tags:
+      - sellers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+  /api/v1/sellers/products/{id}/:
+    get:
+      operationId: sellers_products_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - sellers
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    put:
+      operationId: sellers_products_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - sellers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Product'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Product'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Product'
+        required: true
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    patch:
+      operationId: sellers_products_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - sellers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProduct'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProduct'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProduct'
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+          description: ''
+    delete:
+      operationId: sellers_products_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this product.
+        required: true
+      tags:
+      - sellers
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/sellers/store/{slug}/:
+    get:
+      operationId: sellers_store_retrieve
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - sellers
+      security:
+      - jwtHeaderAuth: []
+      - jwtCookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicStore'
+          description: ''
+components:
+  schemas:
+    BestSellingProduct:
+      type: object
+      properties:
+        name:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        units_sold:
+          type: integer
+        net_profit:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+      required:
+      - name
+      - net_profit
+      - price
+      - units_sold
+    CartAnalysis:
+      type: object
+      properties:
+        abandoned_rate:
+          type: number
+          format: double
+        abandoned_count:
+          type: integer
+        lost_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+      required:
+      - abandoned_count
+      - abandoned_rate
+      - lost_revenue
+    ChartData:
+      type: object
+      properties:
+        labels:
+          type: array
+          items:
+            type: string
+        values:
+          type: array
+          items:
+            type: number
+            format: double
+      required:
+      - labels
+      - values
+    CustomLogin:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required:
+      - email
+      - password
+    DashboardOverview:
+      type: object
+      properties:
+        kpis:
+          $ref: '#/components/schemas/KPIOverview'
+        store_analytics:
+          $ref: '#/components/schemas/ChartData'
+        cart_analysis:
+          $ref: '#/components/schemas/CartAnalysis'
+        revenue_by_device:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeviceRevenue'
+        traffic_sources:
+          $ref: '#/components/schemas/TrafficSources'
+        bestselling_products:
+          type: array
+          items:
+            $ref: '#/components/schemas/BestSellingProduct'
+        sales_forecast:
+          $ref: '#/components/schemas/SalesForecast'
+        latest_orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Order'
+      required:
+      - bestselling_products
+      - cart_analysis
+      - kpis
+      - latest_orders
+      - revenue_by_device
+      - sales_forecast
+      - store_analytics
+      - traffic_sources
+    DashboardStats:
+      type: object
+      properties:
+        total_revenue:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        total_orders:
+          type: integer
+        total_visitors:
+          type: integer
+        conversion_rate:
+          type: number
+          format: double
+      required:
+      - conversion_rate
+      - total_orders
+      - total_revenue
+      - total_visitors
+    DeviceRevenue:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: number
+          format: double
+        color:
+          type: string
+      required:
+      - color
+      - label
+      - value
+    DeviceTypeEnum:
+      enum:
+      - DESKTOP
+      - TABLET
+      - MOBILE
+      - UNKNOWN
+      type: string
+      description: |-
+        * `DESKTOP` - Desktop
+        * `TABLET` - Tablet
+        * `MOBILE` - Mobile
+        * `UNKNOWN` - Unknown
+    JWT:
+      type: object
+      description: Serializer for JWT authentication.
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+      required:
+      - access
+      - refresh
+      - user
+    KPIOverview:
+      type: object
+      properties:
+        total_revenue:
+          $ref: '#/components/schemas/TrendValue'
+        total_orders:
+          $ref: '#/components/schemas/TrendValue'
+        total_visitors:
+          $ref: '#/components/schemas/TrendValue'
+        conversion_rate:
+          $ref: '#/components/schemas/TrendValue'
+      required:
+      - conversion_rate
+      - total_orders
+      - total_revenue
+      - total_visitors
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          readOnly: true
+        customer_email:
+          type: string
+          format: email
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/OrderStatusEnum'
+        total_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        device_type:
+          $ref: '#/components/schemas/DeviceTypeEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        customer:
+          type: integer
+      required:
+      - created_at
+      - customer
+      - customer_email
+      - id
+      - items
+      - total_amount
+      - updated_at
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        product_name:
+          type: string
+          readOnly: true
+        quantity:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        order:
+          type: integer
+        product:
+          type: integer
+        seller:
+          type: integer
+      required:
+      - id
+      - order
+      - price
+      - product
+      - product_name
+      - seller
+    OrderStatusEnum:
+      enum:
+      - PENDING
+      - PROCESSING
+      - SHIPPED
+      - DELIVERED
+      - CANCELLED
+      - REFUNDED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `PROCESSING` - Processing
+        * `SHIPPED` - Shipped
+        * `DELIVERED` - Delivered
+        * `CANCELLED` - Cancelled
+        * `REFUNDED` - Refunded
+    PasswordChange:
+      type: object
+      properties:
+        new_password1:
+          type: string
+          maxLength: 128
+        new_password2:
+          type: string
+          maxLength: 128
+      required:
+      - new_password1
+      - new_password2
+    PasswordReset:
+      type: object
+      description: Serializer for requesting a password reset e-mail.
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
+    PasswordResetConfirm:
+      type: object
+      description: Serializer for confirming a password reset attempt.
+      properties:
+        new_password1:
+          type: string
+          maxLength: 128
+        new_password2:
+          type: string
+          maxLength: 128
+        uid:
+          type: string
+        token:
+          type: string
+      required:
+      - new_password1
+      - new_password2
+      - token
+      - uid
+    PatchedProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category_name:
+          type: string
+          readOnly: true
+        seller_name:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        rating:
+          type: number
+          format: double
+        review_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        stock_qty:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        image:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/ProductStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        seller:
+          type: integer
+          readOnly: true
+        category:
+          type: integer
+          nullable: true
+    PatchedUser:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        user_type:
+          allOf:
+          - $ref: '#/components/schemas/UserTypeEnum'
+          readOnly: true
+        phone:
+          type: string
+          nullable: true
+          maxLength: 15
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        category_name:
+          type: string
+          readOnly: true
+        seller_name:
+          type: string
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        cost_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        rating:
+          type: number
+          format: double
+        review_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        stock_qty:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        image:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        status:
+          $ref: '#/components/schemas/ProductStatusEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        seller:
+          type: integer
+          readOnly: true
+        category:
+          type: integer
+          nullable: true
+      required:
+      - category_name
+      - created_at
+      - description
+      - id
+      - name
+      - price
+      - seller
+      - seller_name
+      - slug
+      - updated_at
+    ProductStatusEnum:
+      enum:
+      - DRAFT
+      - PUBLISHED
+      type: string
+      description: |-
+        * `DRAFT` - Draft
+        * `PUBLISHED` - Published
+    PublicStore:
+      type: object
+      properties:
+        store_name:
+          type: string
+          maxLength: 255
+        slug:
+          type: string
+          maxLength: 50
+          pattern: ^[-a-zA-Z0-9_]+$
+        description:
+          type: string
+        logo:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        banner:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        location:
+          type: string
+          maxLength: 255
+        rating:
+          type: number
+          format: double
+        review_count:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+        positive_feedback_pct:
+          type: number
+          format: double
+        shipping_time:
+          type: string
+          maxLength: 100
+        response_rate_pct:
+          type: number
+          format: double
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        categories:
+          type: string
+          readOnly: true
+        best_sellers:
+          type: string
+          readOnly: true
+        new_arrivals:
+          type: string
+          readOnly: true
+        promotions:
+          type: string
+          readOnly: true
+        all_products:
+          type: string
+          readOnly: true
+      required:
+      - all_products
+      - best_sellers
+      - categories
+      - created_at
+      - new_arrivals
+      - promotions
+      - store_name
+    ResendEmailVerification:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
+    RestAuthDetail:
+      type: object
+      properties:
+        detail:
+          type: string
+          readOnly: true
+      required:
+      - detail
+    SalesForecast:
+      type: object
+      properties:
+        revenue:
+          type: number
+          format: double
+        net_profit:
+          type: number
+          format: double
+        orders:
+          type: number
+          format: double
+        visitors:
+          type: number
+          format: double
+      required:
+      - net_profit
+      - orders
+      - revenue
+      - visitors
+    SellerKYC:
+      type: object
+      properties:
+        rc_number:
+          type: string
+          nullable: true
+          maxLength: 50
+        business_type:
+          type: string
+          nullable: true
+          maxLength: 100
+        business_address:
+          type: string
+          nullable: true
+        id_card:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+        business_license:
+          type: string
+          format: uri
+          nullable: true
+          maxLength: 200
+    SellerRegister:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password1:
+          type: string
+          writeOnly: true
+        password2:
+          type: string
+          writeOnly: true
+        store_name:
+          type: string
+          maxLength: 255
+        rc_number:
+          type: string
+          maxLength: 50
+      required:
+      - email
+      - password1
+      - password2
+      - store_name
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenVerify:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+      required:
+      - token
+    TrafficSources:
+      type: object
+      properties:
+        store_visits:
+          $ref: '#/components/schemas/TrendValue'
+        unique_visitors:
+          $ref: '#/components/schemas/TrendValue'
+        chart_data:
+          type: array
+          items:
+            type: number
+            format: double
+      required:
+      - chart_data
+      - store_visits
+      - unique_visitors
+    TrendValue:
+      type: object
+      properties:
+        value:
+          type: number
+          format: double
+        change:
+          type: number
+          format: double
+        is_up:
+          type: boolean
+      required:
+      - change
+      - is_up
+      - value
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        user_type:
+          allOf:
+          - $ref: '#/components/schemas/UserTypeEnum'
+          readOnly: true
+        phone:
+          type: string
+          nullable: true
+          maxLength: 15
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+      required:
+      - email
+      - id
+      - user_type
+    UserTypeEnum:
+      enum:
+      - CUSTOMER
+      - SELLER
+      - ADMIN
+      type: string
+      description: |-
+        * `CUSTOMER` - Customer
+        * `SELLER` - Seller
+        * `ADMIN` - Admin
+    VerifyEmail:
+      type: object
+      properties:
+        key:
+          type: string
+          writeOnly: true
+      required:
+      - key
+  securitySchemes:
+    jwtCookieAuth:
+      type: apiKey
+      in: cookie
+      name: jefado-auth
+    jwtHeaderAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

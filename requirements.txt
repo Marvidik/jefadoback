@@ -1,0 +1,12 @@
+django>=4.2
+djangorestframework
+django-cors-headers
+dj-rest-auth[with_social]
+django-allauth
+djangorestframework-simplejwt
+drf-spectacular
+Pillow
+django-anymail[brevo]
+python-dotenv
+django-anymail[brevo]
+python-dotenv
