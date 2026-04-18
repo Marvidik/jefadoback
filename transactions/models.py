@@ -2,8 +2,13 @@ from django.db import models
 from django.utils import timezone
 
 
-# Create your models here.
+
 class Order(models.Model):
+    buyer = models.ForeignKey(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="orders",blank=True,null=True
+    )
 
     ORDER_TYPE_CHOICES = (
         ("PRODUCT", "Product"),
@@ -18,7 +23,6 @@ class Order(models.Model):
         ("CANCELLED", "Cancelled"),
     )
 
-    # 👤 Buyer snapshot (important for history integrity)
     buyer_name = models.CharField(max_length=255)
     buyer_email = models.EmailField()
     buyer_phone = models.CharField(max_length=20, blank=True, null=True)
