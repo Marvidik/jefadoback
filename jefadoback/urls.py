@@ -28,6 +28,7 @@ urlpatterns = [
     path('api/v1/auth/', include('dj_rest_auth.urls')),
     path('api/v1/auth/registration/', include('dj_rest_auth.registration.urls')),
     path('api/v1/sellers/', include('sellers.urls')),
+    path('api/v1/public/', include('public.urls')),
     
     # Schema and Documentation
     path('swagger/', RedirectView.as_view(url='/api/v1/schema/swagger-ui/', permanent=True)),

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import SellerProfile, Category, Product
+from .models import SellerProfile, Category, Product,Service
 @admin.register(SellerProfile)
 class SellerProfileAdmin(admin.ModelAdmin):
     list_display = ('store_name', 'user', 'is_verified', 'verification_status', 'created_at')
@@ -14,6 +14,12 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ('name', 'seller', 'category', 'price', 'stock_qty', 'status')
+    list_filter = ('status', 'category')
+    search_fields = ('name', 'seller__store_name')
+
+@admin.register(Service)
+class ServiceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'seller', 'category', 'price', 'duration', 'status')
     list_filter = ('status', 'category')
     search_fields = ('name', 'seller__store_name')
 

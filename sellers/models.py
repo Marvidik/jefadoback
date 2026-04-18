@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 from django.utils.text import slugify
+from django.db.models import Avg, Count
 
 class SellerProfile(models.Model):
     VERIFICATION_STATUS_CHOICES = (
@@ -92,6 +93,14 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+    def update_rating(self):
+        reviews = self.reviews.all()
+        count = reviews.count()
+        avg = reviews.aggregate(Avg('rating'))['rating__avg'] or 0.0
+        self.rating = round(float(avg), 1)
+        self.review_count = count
+        self.save(update_fields=['rating', 'review_count'])
+
 
 
 class Service(models.Model):
@@ -153,3 +162,54 @@ class Service(models.Model):
 
     def __str__(self):
         return self.name
+
+    def update_rating(self):
+        reviews = self.reviews.all()
+        count = reviews.count()
+        avg = reviews.aggregate(Avg('rating'))['rating__avg'] or 0.0
+        self.rating = round(float(avg), 1)
+        self.review_count = count
+        self.save(update_fields=['rating', 'review_count'])
+
+
+
+
+class Review(models.Model):
+    RATING_CHOICES = (
+        (1, '1 Star'),
+        (2, '2 Stars'),
+        (3, '3 Stars'),
+        (4, '4 Stars'),
+        (5, '5 Stars'),
+    )
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reviews')
+    
+    # Generic relation: can be linked to Product OR Service
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, null=True, blank=True, related_name='reviews'
+    )
+    service = models.ForeignKey(
+        Service, on_delete=models.CASCADE, null=True, blank=True, related_name='reviews'
+    )
+
+    rating = models.PositiveSmallIntegerField(choices=RATING_CHOICES)
+    comment = models.TextField()
+    is_verified_purchase = models.BooleanField(default=False)  # You can set this logic later
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'product')   # one review per user per product
+        # Add another if you want for services: ('user', 'service')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user} - {self.rating} stars"
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.product:
+            self.product.update_rating()
+        elif self.service:
+            self.service.update_rating()
