@@ -180,7 +180,7 @@ REST_AUTH = {
     'JWT_AUTH_REFRESH_COOKIE': 'jefado-refresh-token',
     'JWT_AUTH_HTTPONLY': False,
     'USER_DETAILS_SERIALIZER': 'accounts.serializers.UserSerializer',
-    'REGISTER_SERIALIZER': 'accounts.serializers.SellerRegisterSerializer',
+    'REGISTER_SERIALIZER': 'accounts.serializers.CustomRegisterSerializer',
     'LOGIN_SERIALIZER': 'accounts.serializers.CustomLoginSerializer',
 }
 
