@@ -16,7 +16,7 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'slug', 'description', 'price', 'original',
             'rating', 'review_count', 'stock_qty', 'stock_sold',
-            'image', 'status', 'created_at', 'updated_at', 'category','shop'
+            'image', 'status', 'created_at', 'updated_at', 'category','shop','specifications'
         ]
 
 
@@ -81,7 +81,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'id', 'name', 'slug', 'description', 'price', 'original',
             'rating', 'review_count', 'stock_qty', 'stock_sold', 'image',
             'status', 'created_at', 'updated_at', 'category',
-            'seller', 'reviews', 'rating_stats'
+            'seller', 'reviews', 'rating_stats','specifications'
         ]
 
     def get_rating_stats(self, obj):
@@ -169,7 +169,7 @@ class ShopDetailSerializer(serializers.ModelSerializer):
             'location', 'rating', 'review_count', 'positive_feedback_pct',
             'shipping_time', 'response_rate_pct', 'is_verified',
             'joined_date', 'verification_status',
-            'positive_feedback', 'response_rate', 'categories'
+            'positive_feedback', 'response_rate', 'categories','phone_number'
         ]
 
     def get_positive_feedback(self, obj):
@@ -236,7 +236,7 @@ class ShopProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'slug', 'price', 'original', 'rating', 
-            'review_count', 'stock_qty', 'image', 'created_at'
+            'review_count', 'stock_qty', 'image', 'created_at','specifications'
         ]
 
 

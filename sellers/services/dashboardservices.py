@@ -2,7 +2,7 @@ from django.db.models import Sum, Count, F, FloatField, ExpressionWrapper
 from django.utils.timezone import now
 from datetime import timedelta
 from collections import defaultdict
-
+from ..models import SellerProfile
 from transactions.models import Order, OrderItem
 from ..models import Product
 
@@ -30,8 +30,8 @@ class DashboardService:
 
         total_orders = orders.count()
 
-        # fake visitors placeholder (replace with real Visitor model later)
-        total_visitors = 15500
+        #THIS IS NOW TOTAL_REVIEWS(DIDNT CHANGE THE NAME SO IT DOSNT BREAK THINGS IN PROD )
+        total_visitors = 200
 
         conversion_rate = (
             (total_orders / total_visitors) * 100
@@ -82,7 +82,7 @@ class DashboardService:
 
         orders = Order.objects.filter(
             items__product__seller=seller,
-            status="PAID"
+            status="COMPLETED"
         ).annotate(
             month=F("created_at__month")
         )
@@ -128,7 +128,7 @@ class DashboardService:
 
         return Order.objects.filter(
             items__product__seller=seller
-        ).annotate(
+        ).filter(status="PAID").annotate(
             revenue=Sum("total_amount"),
             net_profit=ExpressionWrapper(
                 Sum("total_amount") * 0.85,

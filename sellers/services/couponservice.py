@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from sellers.serializers import CouponSerializer
 from transactions.models import Coupon
 from ..models import Product
 from  ..models import Service
@@ -25,10 +26,10 @@ class CouponService:
 
         coupon = get_object_or_404(Coupon, id=coupon_id, seller=seller)
 
-        for key, value in data.items():
-            setattr(coupon, key, value)
+        serializer = CouponSerializer(coupon, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
 
-        coupon.save()
         return coupon
     @staticmethod
     def delete_coupon(coupon_id, seller):

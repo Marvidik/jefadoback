@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from decimal import Decimal
 from transactions.models import PayoutRequest, BankAccount, Order
-from django.db.models import Sum
+from django.db.models import Sum,Q
 
 class PayoutService:
 
@@ -9,9 +9,11 @@ class PayoutService:
     def get_total_earnings(seller):
         return (
             Order.objects.filter(
-                items__product__seller=seller,
+                Q(items__product__seller=seller) |
+                Q(items__service__seller=seller),
                 status="COMPLETED"
             )
+            .distinct()
             .aggregate(total=Sum("total_amount"))
             .get("total") or Decimal("0.00")
         )
@@ -30,6 +32,24 @@ class PayoutService:
     @classmethod
     def get_available_balance(cls, seller):
         return cls.get_total_earnings(seller) - cls.get_total_pending_and_successful_payouts(seller)
+
+
+    @classmethod
+    def get_cards(cls, seller):
+
+        earned = cls.get_total_earnings(seller)
+
+        payouts = cls.get_total_pending_and_successful_payouts(
+            seller
+        )
+
+        balance = earned - payouts
+
+        return {
+            "total_earned": earned,
+            "payouts": payouts,
+            "available_balance": balance
+        }
 
     @staticmethod
     def list_requests(seller):

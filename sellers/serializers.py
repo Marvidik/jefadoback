@@ -68,7 +68,6 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
 
 
-
 class OrderListSerializer(serializers.ModelSerializer):
 
     items = OrderItemSerializer(many=True, read_only=True)
@@ -93,6 +92,7 @@ class OrderListSerializer(serializers.ModelSerializer):
             "state",   
             "country",
             "postal_code",
+            "buyer_phone"
 
         ]
 
@@ -103,6 +103,10 @@ class OrderListSerializer(serializers.ModelSerializer):
         return float(obj.total_amount) * 0.85
     
 
+class OrderStatusUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ["status"]  # only allow status
 
 class CouponSerializer(serializers.ModelSerializer):
 

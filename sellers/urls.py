@@ -9,6 +9,7 @@ urlpatterns = [
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
     path("orders/analytics/", OrderAnalyticsView.as_view()),
     path("orders/", OrderListPageView.as_view()),
+    path("orders/<int:order_id>/status/", UpdateOrderStatusView.as_view()),
     path("list/services/",ServiceOrderListPageView.as_view(),name="service-order-list"),
     path("coupons/", CouponListCreateView.as_view()),
     path("coupons/<int:pk>/", CouponUpdateView.as_view()),
@@ -19,6 +20,7 @@ urlpatterns = [
     path("bank-accounts/<int:pk>/delete/", BankAccountDeleteView.as_view(), name="bank-account-delete"),
     path("payout-requests/", PayoutRequestListCreateView.as_view(), name="payout-request-list-create"), 
     path("list/payout-requests/", PayoutRequestListCreateView.as_view(), name="payout-request-list"),
+    path("payout/cards/",PayoutCardsView.as_view(),name="payout-card"),
 
     path("change-password/", ChangePasswordView.as_view(), name="change-password"),
 ]

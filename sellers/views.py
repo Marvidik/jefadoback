@@ -13,7 +13,7 @@ from sellers.services.serviceservices import ServiceService
 from transactions.models import Order
 
 from .models import Product
-from .serializers import BankAccountSerializer, ChangePasswordSerializer, CouponSerializer, OrderItemSerializer, OrderListSerializer, PayoutRequestSerializer, ProductSerializer, SellerProfileSerializer, ServiceSerializer
+from .serializers import BankAccountSerializer, ChangePasswordSerializer, CouponSerializer, OrderItemSerializer, OrderListSerializer, OrderStatusUpdateSerializer, PayoutRequestSerializer, ProductSerializer, SellerProfileSerializer, ServiceSerializer
 from .services.productservices import ProductService
 from .filters import OrderFilter, ProductFilter, ServiceFilter
 from .services.permission import IsSeller
@@ -191,10 +191,29 @@ class OrderListPageView(generics.ListAPIView):
         seller = self.request.user.seller_profile
 
         return Order.objects.filter(
-            items__product__seller=seller
+            items__product__seller=seller,status__in=["COMPLETED","PROCESSING","PAID"]
         ).distinct().order_by("-created_at")
 
+class UpdateOrderStatusView(APIView):
 
+    def patch(self, request, order_id):
+        serializer = OrderStatusUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        try:
+            order = OrderAnalyticsService.update_order_status(
+                order_id=order_id,
+                new_status=serializer.validated_data["status"],
+                seller = request.user.seller_profile 
+            )
+        except ValueError as e:
+            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            "message": "Order status updated",
+            "order_id": order.id,
+            "status": order.status
+        })
 
 class OrderAnalyticsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -221,7 +240,7 @@ class ServiceOrderListPageView(generics.ListAPIView):
         seller = self.request.user.seller_profile
 
         return Order.objects.filter(
-            items__service__seller=seller
+            items__service__seller=seller,status__in=["COMPLETED","PROCESSING","PAID"]
         ).distinct().order_by("-created_at")
 
 
@@ -321,7 +340,19 @@ class BankAccountDeleteView(APIView):
 
         return Response({"message": "deleted"})
     
+class PayoutCardsView(APIView):
+    permission_classes = [permissions.IsAuthenticated,IsSeller]
 
+    def get(self, request):
+
+        seller = request.user.seller_profile
+
+        data = PayoutService.get_cards(seller)
+
+        return Response({
+            "status": "success",
+            "data": data
+        })
 
 class PayoutRequestListCreateView(generics.ListCreateAPIView):
     serializer_class = PayoutRequestSerializer

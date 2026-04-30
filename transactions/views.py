@@ -136,6 +136,7 @@ class ProductCheckoutView(APIView):
             return Response({"detail": error_detail}, status=status.HTTP_502_BAD_GATEWAY)
 
         order = result["order"]
+        print(result)
         return Response(
             {
                 "order_id": order.id,
