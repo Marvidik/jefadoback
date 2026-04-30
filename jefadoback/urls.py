@@ -21,12 +21,16 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 from django.conf import settings
 from django.conf.urls.static import static
 
+from accounts.views import RequestPasswordResetOTPView,ConfirmPasswordResetOTPView
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     
     # API V1
     path('api/v1/auth/', include('dj_rest_auth.urls')),
     path('api/v1/auth/registration/', include('dj_rest_auth.registration.urls')),
+    path("api/v1/auth/password/reset/request/", RequestPasswordResetOTPView.as_view()),
+    path("api/v1/auth/password/reset/complete/", ConfirmPasswordResetOTPView.as_view()),
     path('api/v1/sellers/', include('sellers.urls')),
     path('api/v1/public/', include('public.urls')),
     path('api/v1/accounts/', include('accounts.urls')),

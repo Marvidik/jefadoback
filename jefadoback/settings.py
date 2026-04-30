@@ -183,6 +183,7 @@ REST_AUTH = {
     'USER_DETAILS_SERIALIZER': 'accounts.serializers.UserSerializer',
     'REGISTER_SERIALIZER': 'accounts.serializers.CustomRegisterSerializer',
     'LOGIN_SERIALIZER': 'accounts.serializers.CustomLoginSerializer',
+    "PASSWORD_RESET_USE_SITES_DOMAIN": False,
 }
 
 SIMPLE_JWT = {

@@ -4,13 +4,72 @@ from rest_framework.response import Response
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.hashers import check_password
 
+from accounts.services import AuthService
 from public.pagination import PublicPagination
 from transactions.models import Order
-from .models import UserProfile, Address, Wishlist
-from .serializers import ChangePasswordSerializer, UserProfileSerializer, AddressSerializer, WishlistAddSerializer, WishlistSerializer,OrderSerializer
+from .models import PasswordResetOTP, UserProfile, Address, Wishlist
+from .serializers import ChangePasswordSerializer, PasswordResetConfirmSerializer, PasswordResetRequestSerializer, UserProfileSerializer, AddressSerializer, WishlistAddSerializer, WishlistSerializer,OrderSerializer
 from rest_framework import generics, permissions, filters
 from django_filters.rest_framework import DjangoFilterBackend
 
+from drf_spectacular.utils import extend_schema
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+
+@extend_schema(
+    request=PasswordResetRequestSerializer,
+    responses={200: {"message": "OTP sent"}}
+)
+class RequestPasswordResetOTPView(APIView):
+
+    def post(self, request):
+        email = request.data.get("email")
+
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({"message": "If email exists, OTP sent"})
+
+        otp = AuthService.create_password_reset_otp(user)
+
+        return Response({"message": "OTP sent"})
+
+
+@extend_schema(
+    request=PasswordResetConfirmSerializer,
+    responses={200: {"message": "Password reset successful"}}
+)
+class ConfirmPasswordResetOTPView(APIView):
+
+    def post(self, request):
+        email = request.data.get("email")
+        otp = request.data.get("otp")
+        new_password = request.data.get("new_password")
+
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return Response({"error": "Invalid user"}, status=400)
+
+        record = PasswordResetOTP.objects.filter(
+            user=user,
+            otp=otp,
+            is_used=False
+        ).first()
+
+        if not record:
+            return Response({"error": "Invalid OTP"}, status=400)
+
+        user.set_password(new_password)
+        user.save()
+
+        record.is_used = True
+        record.save()
+
+        return Response({"message": "Password reset successful"})
 
 # Profile Get & Update
 class UserProfileView(generics.RetrieveUpdateAPIView):
