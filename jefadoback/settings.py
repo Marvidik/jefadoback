@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-4hpr%aahn55s3508^b6bo0x$iuv$4c)lxg-)t2zrj4ygw_3onj
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 PAYSTACK_SECRET_KEY = os.environ.get("PAYSTACK_SECRET_KEY")
 
@@ -197,7 +197,7 @@ SIMPLE_JWT = {
 
 # CORS Settings
 CORS_ALLOW_ALL_ORIGINS = True # Change to specific origins in production
-CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000']
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','jefado.vercel.app','jefedo.com']
 
 # Spectacular Settings
 SPECTACULAR_SETTINGS = {
