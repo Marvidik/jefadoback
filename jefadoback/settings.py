@@ -197,7 +197,7 @@ SIMPLE_JWT = {
 
 # CORS Settings
 CORS_ALLOW_ALL_ORIGINS = True # Change to specific origins in production
-CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000']
+CSRF_TRUSTED_ORIGINS = ['http://localhost:8000', 'http://127.0.0.1:8000', 'http://localhost:3000','jefado.vercel.app','jefedo.com']
 
 # Spectacular Settings
 SPECTACULAR_SETTINGS = {
