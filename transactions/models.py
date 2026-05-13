@@ -224,3 +224,156 @@ class PayoutRequest(models.Model):
 
     def __str__(self):
         return f"{self.seller.store_name} - {self.amount}"
+
+
+
+
+# subscriptions/models.py
+
+import uuid
+
+from django.conf import settings
+from django.db import models
+from django.utils import timezone
+
+
+class Plan(models.Model):
+    name = models.CharField(max_length=120)
+
+    slug = models.SlugField(unique=True)
+
+    description = models.TextField(blank=True)
+
+    price = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    duration_days = models.PositiveIntegerField(default=30)
+
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
+
+
+class UserSubscription(models.Model):
+
+    STATUS_ACTIVE = "active"
+    STATUS_EXPIRED = "expired"
+    STATUS_CANCELLED = "cancelled"
+
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_EXPIRED, "Expired"),
+        (STATUS_CANCELLED, "Cancelled"),
+    ]
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="subscriptions",
+    )
+
+    plan = models.ForeignKey(
+        Plan,
+        on_delete=models.PROTECT,
+        related_name="subscriptions",
+    )
+
+    start_date = models.DateTimeField()
+
+    end_date = models.DateTimeField()
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_ACTIVE,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    @property
+    def is_active(self):
+        return (
+            self.status == self.STATUS_ACTIVE
+            and self.end_date > timezone.now()
+        )
+
+
+class PlanPayment(models.Model):
+
+    STATUS_PENDING = "pending"
+    STATUS_SUCCESS = "success"
+    STATUS_FAILED = "failed"
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_SUCCESS, "Success"),
+        (STATUS_FAILED, "Failed"),
+    ]
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="plan_payments",
+    )
+
+    plan = models.ForeignKey(
+        Plan,
+        on_delete=models.PROTECT,
+        related_name="payments",
+    )
+
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    reference = models.CharField(
+        max_length=120,
+        unique=True,
+    )
+
+    paystack_access_code = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+    )
+
+    paystack_authorization_url = models.URLField(
+        blank=True,
+        null=True,
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+    )
+
+    paid_at = models.DateTimeField(
+        blank=True,
+        null=True,
+    )
+
+    raw_response = models.JSONField(
+        blank=True,
+        null=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]

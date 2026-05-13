@@ -657,3 +657,132 @@ class OrderDetailView(APIView):
 
         data = OrderSerializer(order).data
         return Response(data)
+    
+
+from transactions.serializers import (
+    InitializePlanSerializer,
+    VerifyPlanSerializer,
+)
+
+from transactions.services.subscription import SubscriptionService
+
+
+class InitializePlanPaymentView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        tags=["Subscriptions"],
+
+        request=InitializePlanSerializer,
+
+        responses={
+            200: OpenApiResponse(
+                description="Payment initialized successfully."
+            ),
+
+            400: OpenApiResponse(
+                description="Validation error."
+            ),
+
+            500: OpenApiResponse(
+                description="Internal server error."
+            ),
+        },
+
+        description="""
+Initialize a Paystack payment for a subscription plan.
+
+Authenticated users only.
+
+Payload:
+{
+    "plan_slug": "pro"
+}
+""",
+    )
+    def post(self, request):
+
+        serializer = InitializePlanSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        try:
+
+            data = SubscriptionService.initialize_plan_payment(
+                user=request.user,
+                plan_slug=serializer.validated_data["plan_slug"],
+            )
+
+            return Response(
+                {
+                    "message": "Payment initialized successfully.",
+                    "data": data,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except ValueError as e:
+
+            return Response(
+                {
+                    "message": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as e:
+
+            return Response(
+                {
+                    "message": str(e),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class VerifyPlanPaymentView(APIView):
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+
+        serializer = VerifyPlanSerializer(
+            data=request.data
+        )
+
+        serializer.is_valid(raise_exception=True)
+
+        try:
+
+            data = SubscriptionService.verify_plan_payment(
+                reference=serializer.validated_data["reference"],
+            )
+
+            return Response(
+                {
+                    "message": data["message"],
+                    "data": data,
+                },
+                status=status.HTTP_200_OK,
+            )
+
+        except ValueError as e:
+
+            return Response(
+                {
+                    "message": str(e),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as e:
+
+            return Response(
+                {
+                    "message": str(e),
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

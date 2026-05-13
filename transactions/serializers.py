@@ -195,3 +195,11 @@ class VerifyPaymentResponseSerializer(serializers.Serializer):
 class WebhookResponseSerializer(serializers.Serializer):
     status = serializers.CharField(help_text="Always 'ok' — Paystack requires 200 to stop retrying")
  
+
+
+class InitializePlanSerializer(serializers.Serializer):
+    plan_slug = serializers.SlugField()
+
+
+class VerifyPlanSerializer(serializers.Serializer):
+    reference = serializers.CharField()
