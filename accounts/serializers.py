@@ -34,6 +34,12 @@ class CustomRegisterSerializer(RegisterSerializer):
 
     username = None  # Hide username
 
+    user_type = serializers.ChoiceField(
+        choices=['BUYER', 'SELLER'], 
+        required=False, 
+        default='BUYER'
+    )
+
     def validate_email(self, email):
         """Explicitly check for duplicate email (most important fix)"""
         email = super().validate_email(email)  # Let parent do basic validation
