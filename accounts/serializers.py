@@ -27,49 +27,31 @@ class CustomLoginSerializer(LoginSerializer):
 
 
 class CustomRegisterSerializer(RegisterSerializer):
-    # Extra fields
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     store_name = serializers.CharField(max_length=255, required=False, allow_blank=True)
     rc_number = serializers.CharField(max_length=50, required=False, allow_blank=True)
-    
-    # We still hide username if you don't want it
-    username = None
+
+    username = None  # Hide username
+
+    def validate_email(self, email):
+        """Explicitly check for duplicate email (most important fix)"""
+        email = super().validate_email(email)  # Let parent do basic validation
+
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError(
+                "A user with this email address already exists."
+            )
+        return email
 
     def validate(self, data):
-        # If user wants to register as seller, store_name is required
+        # Seller validation
         user_type = data.get('user_type')
         if user_type == 'SELLER' and not data.get('store_name'):
-            raise serializers.ValidationError({"store_name": "Store name is required for sellers."})
+            raise serializers.ValidationError({
+                "store_name": "Store name is required for sellers."
+            })
         return data
-
-    @transaction.atomic
-    def save(self, request):
-        # Get user_type from request data (default to BUYER)
-        user_type = self.validated_data.get('user_type', 'BUYER')
-
-        # Create the User
-        user = super().save(request)
-        
-        # Set user type
-        user.user_type = user_type
-        user.first_name = self.validated_data.get('first_name', '')
-        user.last_name = self.validated_data.get('last_name', '')
-        user.save()
-
-        # Only create SellerProfile if registering as SELLER
-        if user_type == 'SELLER':
-            store_name = self.validated_data.get('store_name')
-            rc_number = self.validated_data.get('rc_number')
-
-            SellerProfile.objects.create(
-                user=user,
-                store_name=store_name,
-                rc_number=rc_number,
-                # You can add more fields later (description, logo, etc.)
-            )
-
-        return user
 
     def validate_store_name(self, value):
         if not value:
@@ -78,6 +60,29 @@ class CustomRegisterSerializer(RegisterSerializer):
         if SellerProfile.objects.filter(slug=slug).exists():
             raise serializers.ValidationError("A store with this name already exists.")
         return value
+
+    @transaction.atomic
+    def save(self, request):
+        user_type = self.validated_data.get('user_type', 'BUYER')
+
+        # Create user (this now won't reach DB if email exists)
+        user = super().save(request)
+
+        # Update extra fields
+        user.user_type = user_type
+        user.first_name = self.validated_data.get('first_name', '')
+        user.last_name = self.validated_data.get('last_name', '')
+        user.save()
+
+        # Create SellerProfile only for sellers
+        if user_type == 'SELLER':
+            SellerProfile.objects.create(
+                user=user,
+                store_name=self.validated_data.get('store_name'),
+                rc_number=self.validated_data.get('rc_number'),
+            )
+
+        return user
 
 
 
