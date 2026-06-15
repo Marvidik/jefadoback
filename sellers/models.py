@@ -81,6 +81,9 @@ class Product(models.Model):
     stock_qty = models.PositiveIntegerField(default=0)
     stock_sold = models.PositiveIntegerField(default=0)
     image = models.URLField(blank=True, null=True)
+    image2 = models.URLField(blank=True, null=True)
+    image3 = models.URLField(blank=True, null=True)
+    image4 = models.URLField(blank=True, null=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='DRAFT')
     specifications = models.JSONField(blank=True, null=True)
     

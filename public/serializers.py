@@ -79,7 +79,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'slug', 'description', 'price', 'original',
-            'rating', 'review_count', 'stock_qty', 'stock_sold', 'image',
+            'rating', 'review_count', 'stock_qty', 'stock_sold', 'image','image2', 'image3', 'image4',
             'status', 'created_at', 'updated_at', 'category',
             'seller', 'reviews', 'rating_stats','specifications'
         ]
@@ -236,7 +236,7 @@ class ShopProductSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'name', 'slug', 'price', 'original', 'rating', 
-            'review_count', 'stock_qty', 'image', 'created_at','specifications'
+            'review_count', 'stock_qty', 'image', 'image2', 'image3', 'image4', 'created_at','specifications'
         ]
 
 
