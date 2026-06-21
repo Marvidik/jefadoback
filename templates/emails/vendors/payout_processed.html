@@ -1,0 +1,7 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>Payout Processed</h2>
+<p>Hi {{ vendor_name }},</p>
+<p>Good news! Your recent payout of <strong>{{ amount }}</strong> has been successfully processed and transferred to your registered account.</p>
+<p>Please note that it may take some time to reflect in your bank account depending on your bank's processing times.</p>
+{% endblock %}

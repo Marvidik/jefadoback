@@ -1,0 +1,11 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>Vendor Support Request</h2>
+<p>Hello Admin,</p>
+<p>A vendor has submitted a new support request.</p>
+<p><strong>Vendor:</strong> {{ vendor_name }}</p>
+<p><strong>Subject:</strong> {{ subject }}</p>
+<div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #B31217; margin: 20px 0;">
+    <p><em>"{{ message }}"</em></p>
+</div>
+{% endblock %}

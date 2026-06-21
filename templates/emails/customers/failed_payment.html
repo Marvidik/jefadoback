@@ -1,0 +1,13 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>Payment Failed</h2>
+<p>Hi {{ name }},</p>
+<p>We encountered an issue processing the payment of <strong>{{ amount }}</strong> for your order <strong>#{{ order_id }}</strong>.</p>
+<div style="background-color: #f9f9f9; border-left: 4px solid #B31217; padding: 15px; margin: 20px 0;">
+    <p><strong>Reason:</strong> {{ error_message }}</p>
+</div>
+<p>Don't worry, your order has not been lost. You can try completing the payment again using a different payment method.</p>
+<div class="button-container">
+    <a href="{{ checkout_url }}" class="button">Try Payment Again</a>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>New Review Received</h2>
+<p>Hi {{ vendor_name }},</p>
+<p>A customer just left a {{ rating }}-star review on your product <strong>{{ product_name }}</strong>.</p>
+<div style="background-color: #f9f9f9; padding: 15px; border-left: 4px solid #B31217; margin: 20px 0;">
+    <p><em>"{{ review_text }}"</em></p>
+</div>
+{% endblock %}

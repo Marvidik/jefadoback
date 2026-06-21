@@ -1,0 +1,9 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>Product Update: {{ status }}</h2>
+<p>Hi {{ vendor_name }},</p>
+<p>Your product <strong>{{ product_name }}</strong> has been <strong>{{ status }}</strong> by the admin team.</p>
+{% if feedback %}
+<p><strong>Feedback:</strong> {{ feedback }}</p>
+{% endif %}
+{% endblock %}

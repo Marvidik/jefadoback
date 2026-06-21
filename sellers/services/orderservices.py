@@ -89,7 +89,7 @@ class OrderAnalyticsService:
         ]
     
 
-    ALLOWED_STATUSES = ["COMPLETED", "PROCESSING", "PAID", "CANCELLED"]
+    ALLOWED_STATUSES = ["COMPLETED", "PROCESSING", "PAID", "CANCELLED", "SHIPPED", "OUT_FOR_DELIVERY"]
 
     @staticmethod
     @transaction.atomic
@@ -112,5 +112,53 @@ class OrderAnalyticsService:
 
         order.status = new_status
         order.save(update_fields=["status"])
+        
+        # -- Trigger Notifications to Customer --
+        from core.email_service import send_notification
+        
+        if new_status == "SHIPPED" and order.buyer:
+            # Assuming tracking number is available or left blank for now
+            tracking_number = "N/A"
+            send_notification(
+                user=order.buyer,
+                title=f"Order #{order.id} Shipped",
+                message=f"Your order #{order.id} has been shipped.",
+                notification_type="ORDER",
+                email_template="customers/order_shipped.html",
+                email_subject="Your Order is on the Way!",
+                email_context={
+                    "name": order.buyer_name,
+                    "order_id": order.id,
+                    "tracking_number": tracking_number,
+                    "tracking_url": f"https://jefedo.com/orders/{order.id}/track"
+                }
+            )
+        elif new_status == "OUT_FOR_DELIVERY" and order.buyer:
+            send_notification(
+                user=order.buyer,
+                title=f"Order #{order.id} Out for Delivery",
+                message=f"Your order #{order.id} is out for delivery today.",
+                notification_type="ORDER",
+                email_template="customers/out_for_delivery.html",
+                email_subject="Out for Delivery",
+                email_context={
+                    "name": order.buyer_name,
+                    "order_id": order.id
+                }
+            )
+        elif new_status == "COMPLETED" and order.buyer:
+            send_notification(
+                user=order.buyer,
+                title=f"Order #{order.id} Delivered",
+                message=f"Your order #{order.id} has been delivered successfully.",
+                notification_type="ORDER",
+                email_template="customers/order_delivered.html",
+                email_subject="Order Delivered",
+                email_context={
+                    "name": order.buyer_name,
+                    "order_id": order.id,
+                    "review_url": f"https://jefedo.com/orders/{order.id}/review"
+                }
+            )
 
         return order

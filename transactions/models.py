@@ -21,6 +21,8 @@ class Order(models.Model):
         ("PENDING", "Pending"),
         ("PAID", "Paid"),
         ("PROCESSING", "Processing"),
+        ("SHIPPED", "Shipped"),
+        ("OUT_FOR_DELIVERY", "Out for Delivery"),
         ("COMPLETED", "Completed"),
         ("CANCELLED", "Cancelled"),
     )

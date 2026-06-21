@@ -1,0 +1,9 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>Order Delivered</h2>
+<p>Hi {{ name }},</p>
+<p>Your order <strong>#{{ order_id }}</strong> has been delivered. We hope you love your purchase!</p>
+<div class="button-container">
+    <a href="{{ review_url }}" class="button">Leave a Review</a>
+</div>
+{% endblock %}

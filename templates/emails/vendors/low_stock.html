@@ -1,0 +1,10 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>Low Stock Alert</h2>
+<p>Hi {{ vendor_name }},</p>
+<p>This is an automated alert to let you know that the stock for <strong>{{ product_name }}</strong> is running low.</p>
+<p><strong>Current Stock:</strong> {{ current_stock }}</p>
+<div class="button-container">
+    <a href="{{ product_url }}" class="button">Update Inventory</a>
+</div>
+{% endblock %}

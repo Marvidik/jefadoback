@@ -1,0 +1,12 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>{{ promo_title }}</h2>
+<p>Hi {{ name }},</p>
+<p>{{ promo_message }}</p>
+<div style="background-color: #f9f9f9; border: 1px dashed #B31217; padding: 15px; text-align: center; margin: 20px 0; border-radius: 4px;">
+    Use Code: <span style="font-size: 20px; font-weight: bold; color: #B31217;">{{ promo_code }}</span>
+</div>
+<div class="button-container">
+    <a href="{{ shop_url }}" class="button">Shop Now</a>
+</div>
+{% endblock %}

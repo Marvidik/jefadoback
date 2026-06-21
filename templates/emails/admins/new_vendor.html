@@ -1,0 +1,11 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>New Vendor Registration</h2>
+<p>Hello Admin,</p>
+<p>A new vendor has registered on the platform and is pending approval.</p>
+<p><strong>Store Name:</strong> {{ store_name }}</p>
+<p><strong>Vendor Email:</strong> {{ vendor_email }}</p>
+<div class="button-container">
+    <a href="{{ admin_url }}" class="button">Review Vendor</a>
+</div>
+{% endblock %}

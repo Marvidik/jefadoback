@@ -1,0 +1,10 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>New Order Received!</h2>
+<p>Hi {{ vendor_name }},</p>
+<p>You have received a new order <strong>#{{ order_id }}</strong>.</p>
+<p>Please review the order details and start processing it as soon as possible.</p>
+<div class="button-container">
+    <a href="{{ dashboard_url }}" class="button">View Dashboard</a>
+</div>
+{% endblock %}

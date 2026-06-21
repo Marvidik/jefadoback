@@ -31,6 +31,7 @@ class CustomRegisterSerializer(RegisterSerializer):
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     store_name = serializers.CharField(max_length=255, required=False, allow_blank=True)
     rc_number = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    phone = serializers.CharField(max_length=15, required=False, allow_blank=True)
 
     username = None  # Hide username
 
@@ -53,10 +54,14 @@ class CustomRegisterSerializer(RegisterSerializer):
     def validate(self, data):
         # Seller validation
         user_type = data.get('user_type')
-        if user_type == 'SELLER' and not data.get('store_name'):
-            raise serializers.ValidationError({
-                "store_name": "Store name is required for sellers."
-            })
+        if user_type == 'SELLER':
+            errors = {}
+            if not data.get('store_name'):
+                errors["store_name"] = "Store name is required for sellers."
+            if not data.get('phone'):
+                errors["phone"] = "Phone number is required for sellers."
+            if errors:
+                raise serializers.ValidationError(errors)
         return data
 
     def validate_store_name(self, value):
@@ -78,15 +83,33 @@ class CustomRegisterSerializer(RegisterSerializer):
         user.user_type = user_type
         user.first_name = self.validated_data.get('first_name', '')
         user.last_name = self.validated_data.get('last_name', '')
+        user.phone = self.validated_data.get('phone', '')
         user.save()
 
         # Create SellerProfile only for sellers
         if user_type == 'SELLER':
+            store_name = self.validated_data.get('store_name')
             SellerProfile.objects.create(
                 user=user,
-                store_name=self.validated_data.get('store_name'),
+                store_name=store_name,
                 rc_number=self.validated_data.get('rc_number'),
+                phone_number=self.validated_data.get('phone', ''),
             )
+            
+        # Trigger Welcome Email to the user
+        from core.email_service import send_jefedo_email
+        name = user.first_name or user.email.split('@')[0]
+        send_jefedo_email(
+            to_email=user.email,
+            subject="Welcome to Jefedo!",
+            template_name="auth/welcome_email.html",
+            context={
+                "name": name,
+                "is_seller": user_type == 'SELLER',
+                "dashboard_url": "https://jefedo.com/dashboard",
+                "shop_url": "https://jefedo.com/shop"
+            }
+        )
 
         return user
 

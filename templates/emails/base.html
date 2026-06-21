@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title|default:"Jefedo Notification" }}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333333;
+        }
+        .wrapper {
+            width: 100%;
+            table-layout: fixed;
+            background-color: #f4f7f6;
+            padding-bottom: 60px;
+        }
+        .main {
+            background-color: #ffffff;
+            margin: 0 auto;
+            width: 100%;
+            max-width: 600px;
+            border-spacing: 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            margin-top: 40px;
+        }
+        .header {
+            background-color: #B31217;
+            padding: 20px 30px;
+            text-align: center;
+        }
+        .header img {
+            max-width: 150px;
+            height: auto;
+        }
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 30px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .content h2 {
+            color: #B31217;
+            font-size: 20px;
+            margin-top: 0;
+        }
+        .button-container {
+            text-align: center;
+            margin: 30px 0;
+        }
+        .button {
+            background-color: #B31217;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 12px 30px;
+            border-radius: 4px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .footer {
+            padding: 20px 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #999999;
+            border-top: 1px solid #eeeeee;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+        .footer a {
+            color: #B31217;
+            text-decoration: none;
+        }
+        /* Tables for order details etc */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .data-table th, .data-table td {
+            padding: 10px;
+            border-bottom: 1px solid #eeeeee;
+            text-align: left;
+        }
+        .data-table th {
+            font-weight: 600;
+            color: #555555;
+            background-color: #f9f9f9;
+        }
+    </style>
+</head>
+<body>
+    <center class="wrapper">
+        <table class="main" width="100%">
+            <!-- HEADER -->
+            <tr>
+                <td class="header">
+                    <!-- Replace with actual logo URL -->
+                    <!-- <img src="https://jefedo.com/logo.png" alt="Jefedo" /> -->
+                    <h1>JEFEDO</h1>
+                </td>
+            </tr>
+            
+            <!-- CONTENT -->
+            <tr>
+                <td class="content">
+                    {% block content %}{% endblock %}
+                </td>
+            </tr>
+            
+            <!-- FOOTER -->
+            <tr>
+                <td class="footer">
+                    <p>&copy; {% now "Y" %} Jefedo Multi-Vendor Marketplace. All rights reserved.</p>
+                    <p>Need help? Contact our <a href="mailto:support@jefedo.com">support team</a>.</p>
+                </td>
+            </tr>
+        </table>
+    </center>
+</body>
+</html>

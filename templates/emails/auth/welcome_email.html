@@ -1,0 +1,17 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>Welcome to Jefedo!</h2>
+<p>Hi {{ name }},</p>
+<p>Thank you for registering on the Jefedo Multi-Vendor Marketplace. We are thrilled to have you onboard.</p>
+{% if is_seller %}
+<p>As a vendor, you can now set up your store, upload your products or services, and reach thousands of buyers.</p>
+<div class="button-container">
+    <a href="{{ dashboard_url }}" class="button">Go to Dashboard</a>
+</div>
+{% else %}
+<p>You can now explore amazing deals, shop for your favorite products, and book premium services.</p>
+<div class="button-container">
+    <a href="{{ shop_url }}" class="button">Start Shopping</a>
+</div>
+{% endif %}
+{% endblock %}

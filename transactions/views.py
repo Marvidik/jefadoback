@@ -378,7 +378,8 @@ class PaystackWebhookView(APIView):
             "Requests with invalid or missing signatures are rejected with 400. "
             "\n\n"
             "**Handled events:**\n"
-            "- `charge.success` → marks transaction `SUCCESS`, order → `PAID`\n"
+            "- `charge.success` → marks transaction `SUCCESS`, order → `PAID`, sends success emails\n"
+            "- `charge.failed` → marks transaction `FAILED`, order → `CANCELLED`, sends failed emails\n"
             "\n\n"
             "Always returns HTTP 200 so Paystack stops retrying."
         ),
@@ -455,7 +456,10 @@ class PaystackWebhookView(APIView):
         data = payload.get("data", {})
         reference = data.get("reference")
 
-        if event == "charge.success" and reference:
+        # Handle both success and failure events.
+        # Calling handle_payment_verification will automatically trigger all configured 
+        # success/failure emails and vendor notifications!
+        if event in ["charge.success", "charge.failed"] and reference:
             try:
                 checkout_service.handle_payment_verification(reference)
             except Exception:

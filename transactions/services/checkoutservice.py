@@ -314,6 +314,65 @@ def handle_payment_verification(reference: str) -> dict:
         order.status = "PAID"
         order.save(update_fields=["status"])
 
+        # -- Trigger Success Notifications --
+        from core.email_service import send_jefedo_email, send_notification
+        
+        # 1. To Customer: Payment Successful
+        send_jefedo_email(
+            to_email=order.buyer_email,
+            subject="Payment Successful",
+            template_name="customers/payment_successful.html",
+            context={
+                "name": order.buyer_name,
+                "amount": str(txn.amount_paid),
+                "order_id": order.id
+            }
+        )
+        
+        # 2. To Customer: Order Confirmation
+        items_data = []
+        for item in order.items.select_related("product__seller__user", "service__seller__user").all():
+            item_name = item.product.name if item.product else item.service.name
+            items_data.append({"name": item_name, "quantity": item.quantity, "price": str(item.price)})
+            
+            # 3. To Vendor: New Order Received
+            seller_user = None
+            seller_name = ""
+            if item.product and item.product.seller:
+                seller_user = item.product.seller.user
+                seller_name = item.product.seller.store_name
+            elif item.service and item.service.seller:
+                seller_user = item.service.seller.user
+                seller_name = item.service.seller.store_name
+                
+            if seller_user:
+                send_notification(
+                    user=seller_user,
+                    title=f"New Order #{order.id}",
+                    message=f"You received an order for {item_name}.",
+                    notification_type="ORDER",
+                    email_template="vendors/new_order_received.html",
+                    email_subject="New Order Received!",
+                    email_context={
+                        "vendor_name": seller_name,
+                        "order_id": order.id,
+                        "dashboard_url": "https://jefedo.com/dashboard/orders"
+                    }
+                )
+
+        send_jefedo_email(
+            to_email=order.buyer_email,
+            subject=f"Order Confirmation #{order.id}",
+            template_name="customers/order_confirmation.html",
+            context={
+                "name": order.buyer_name,
+                "order_id": order.id,
+                "items": items_data,
+                "total_amount": str(order.total_amount),
+                "order_url": f"https://jefedo.com/orders/{order.id}"
+            }
+        )
+
         return {"success": True, "order": order, "transaction": txn}
 
     else:
@@ -324,6 +383,21 @@ def handle_payment_verification(reference: str) -> dict:
         order = txn.order
         order.status = "CANCELLED"
         order.save(update_fields=["status"])
+        
+        # -- Trigger Failure Notification to Buyer --
+        from core.email_service import send_jefedo_email
+        send_jefedo_email(
+            to_email=order.buyer_email,
+            subject="Payment Failed",
+            template_name="customers/failed_payment.html",
+            context={
+                "name": order.buyer_name,
+                "order_id": order.id,
+                "amount": str(txn.amount),
+                "error_message": gateway_response or "Payment was abandoned or failed.",
+                "checkout_url": f"https://jefedo.com/checkout/{order.id}"
+            }
+        )
 
         # Restore product stock on failure
         if order.order_type == "PRODUCT":

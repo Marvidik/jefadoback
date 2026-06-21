@@ -1,0 +1,9 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>Did you forget something?</h2>
+<p>Hi {{ name }},</p>
+<p>We noticed you left some great items in your cart. They are waiting for you!</p>
+<div class="button-container">
+    <a href="{{ cart_url }}" class="button">Return to Cart</a>
+</div>
+{% endblock %}

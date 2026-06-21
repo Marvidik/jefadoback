@@ -1,0 +1,6 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>Out for Delivery</h2>
+<p>Hi {{ name }},</p>
+<p>Your order <strong>#{{ order_id }}</strong> is out for delivery today! Please make sure someone is available at your shipping address to receive it.</p>
+{% endblock %}

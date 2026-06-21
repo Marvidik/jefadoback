@@ -1,0 +1,12 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>CRITICAL: Fraud Alert</h2>
+<p>Hello Admin,</p>
+<p>Suspicious activity has been detected on the platform.</p>
+<p><strong>Type:</strong> {{ alert_type }}</p>
+<p><strong>Details:</strong> {{ details }}</p>
+<p><strong>User involved:</strong> {{ user_email }}</p>
+<div class="button-container">
+    <a href="{{ admin_url }}" class="button">Investigate Now</a>
+</div>
+{% endblock %}

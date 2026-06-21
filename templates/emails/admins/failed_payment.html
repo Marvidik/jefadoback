@@ -1,0 +1,10 @@
+{% extends "emails/base.html" %}
+{% block content %}
+<h2>Payment Failure Alert</h2>
+<p>Hello Admin,</p>
+<p>A payment failure was detected on the platform.</p>
+<p><strong>Order ID:</strong> {{ order_id }}</p>
+<p><strong>Customer:</strong> {{ customer_email }}</p>
+<p><strong>Amount:</strong> {{ amount }}</p>
+<p><strong>Reason:</strong> {{ error_message }}</p>
+{% endblock %}
