@@ -280,131 +280,211 @@ def initiate_service_checkout(validated_data: dict, user=None) -> dict:
 
 
 @db_transaction.atomic
-def handle_payment_verification(reference: str) -> dict:
-    """
-    Verify a Paystack payment and update Order + Transaction accordingly.
-    Idempotent — safe to call multiple times.
-    """
+def _update_payment_records(reference: str) -> dict:
     try:
         txn = Transaction.objects.select_related("order").get(reference=reference)
     except Transaction.DoesNotExist:
         raise ValueError(f"Transaction with reference '{reference}' not found.")
-
+ 
+    # Already processed — nothing to do.
     if txn.status == "SUCCESS":
-        return {"success": True, "order": txn.order, "transaction": txn}
-
-    ps_data = ps.verify_transaction(reference)
-
+        return {"already_done": True, "order": txn.order, "transaction": txn}
+ 
+    ps_data        = ps.verify_transaction(reference)
     gateway_status = ps_data.get("status")
-    amount_paid_kobo = ps_data.get("amount", 0)
-    amount_paid_naira = Decimal(str(amount_paid_kobo)) / Decimal("100")
-    paid_at = ps_data.get("paid_at")
-    paystack_id = str(ps_data.get("id", ""))
-    gateway_response = ps_data.get("gateway_response", "")
-
+    gateway_resp   = ps_data.get("gateway_response", "")
+    amount_naira   = Decimal(str(ps_data.get("amount", 0))) / Decimal("100")
+    paid_at        = ps_data.get("paid_at")
+    paystack_id    = str(ps_data.get("id", ""))
+ 
+    order = txn.order
+ 
+    # ── SUCCESS path ─────────────────────────────────────────────────────────
     if gateway_status == "success":
-        txn.status = "SUCCESS"
-        txn.amount_paid = amount_paid_naira
-        txn.paystack_id = paystack_id
-        txn.gateway_response = gateway_response
-        txn.paid_at = paid_at
+        txn.status           = "SUCCESS"
+        txn.amount_paid      = amount_naira
+        txn.paystack_id      = paystack_id
+        txn.gateway_response = gateway_resp
+        txn.paid_at          = paid_at
         txn.save()
-
-        order = txn.order
+ 
         order.status = "PAID"
         order.save(update_fields=["status"])
-
-        # -- Trigger Success Notifications --
-        from core.email_service import send_jefedo_email, send_notification
-        
-        # 1. To Customer: Payment Successful
-        send_jefedo_email(
-            to_email=order.buyer_email,
-            subject="Payment Successful",
-            template_name="customers/payment_successful.html",
-            context={
-                "name": order.buyer_name,
-                "amount": str(txn.amount_paid),
-                "order_id": order.id
-            }
-        )
-        
-        # 2. To Customer: Order Confirmation
-        items_data = []
-        for item in order.items.select_related("product__seller__user", "service__seller__user").all():
-            item_name = item.product.name if item.product else item.service.name
-            items_data.append({"name": item_name, "quantity": item.quantity, "price": str(item.price)})
-            
-            # 3. To Vendor: New Order Received
-            seller_user = None
-            seller_name = ""
-            if item.product and item.product.seller:
-                seller_user = item.product.seller.user
-                seller_name = item.product.seller.store_name
-            elif item.service and item.service.seller:
-                seller_user = item.service.seller.user
-                seller_name = item.service.seller.store_name
-                
+ 
+        # Collect everything needed for emails while we're still inside the
+        # transaction and the related objects are warm in memory.
+        items_data          = []
+        vendor_notifications = []
+ 
+        for item in order.items.select_related(
+            "product__seller__user", "service__seller__user"
+        ).all():
+            if item.product:
+                item_name   = item.product.name
+                seller_user = getattr(item.product.seller, "user", None)
+                seller_name = getattr(item.product.seller, "store_name", "")
+            elif item.service:
+                item_name   = item.service.name
+                seller_user = getattr(item.service.seller, "user", None)
+                seller_name = getattr(item.service.seller, "store_name", "")
+            else:
+                item_name   = "Unknown item"
+                seller_user = None
+                seller_name = ""
+ 
+            items_data.append({
+                "name":     item_name,
+                "quantity": item.quantity,
+                "price":    str(item.price),
+            })
+ 
             if seller_user:
+                vendor_notifications.append({
+                    "user":        seller_user,
+                    "item_name":   item_name,
+                    "seller_name": seller_name,
+                })
+ 
+        return {
+            "already_done":         False,
+            "success":              True,
+            "order":                order,
+            "transaction":          txn,
+            "items_data":           items_data,
+            "vendor_notifications": vendor_notifications,
+        }
+ 
+    # ── FAILURE path ─────────────────────────────────────────────────────────
+    txn.status           = "FAILED" if gateway_status == "failed" else "ABANDONED"
+    txn.gateway_response = gateway_resp
+    txn.save()
+ 
+    order.status = "CANCELLED"
+    order.save(update_fields=["status"])
+ 
+    # Restore stock — DB operation, fine inside the transaction.
+    if order.order_type == "PRODUCT":
+        for item in order.items.select_related("product").all():
+            if item.product:
+                item.product.stock_qty  += item.quantity
+                item.product.stock_sold  = max(0, item.product.stock_sold - item.quantity)
+                item.product.save(update_fields=["stock_qty", "stock_sold"])
+ 
+    return {
+        "already_done":   False,
+        "success":        False,
+        "order":          order,
+        "transaction":    txn,
+        "gateway_response": gateway_resp,
+    }
+ 
+ 
+# ---------------------------------------------------------------------------
+# Public — calls _update_payment_records then fires emails AFTER commit.
+# ---------------------------------------------------------------------------
+ 
+def handle_payment_verification(reference: str) -> dict:
+    """
+    Verify a Paystack payment and update Order + Transaction accordingly.
+    Idempotent — safe to call multiple times.
+ 
+    The DB update is fully atomic. Emails are sent only after the transaction
+    commits, so an email failure can never roll back the order status.
+    Each email is individually guarded — one failure won't block the others.
+    """
+    from core.email_service import send_jefedo_email, send_notification
+ 
+    result = _update_payment_records(reference)
+ 
+    # Already processed on a previous call — nothing left to do.
+    if result["already_done"]:
+        return {
+            "success":     True,
+            "order":       result["order"],
+            "transaction": result["transaction"],
+        }
+ 
+    order = result["order"]
+    txn   = result["transaction"]
+ 
+    # ── SUCCESS emails ────────────────────────────────────────────────────────
+    if result["success"]:
+ 
+        # 1. Payment confirmation to buyer
+        try:
+            send_jefedo_email(
+                to_email      = order.buyer_email,
+                subject       = "Payment Successful – Jefedo",
+                template_name = "customers/payment_successful.html",
+                context       = {
+                    "name":     order.buyer_name,
+                    "amount":   str(txn.amount_paid),
+                    "order_id": order.id,
+                },
+            )
+        except Exception:
+            logger.exception("Failed to send payment-success email for order %s", order.id)
+ 
+        # 2. New-order notification to each vendor
+        for vendor in result.get("vendor_notifications", []):
+            try:
                 send_notification(
-                    user=seller_user,
-                    title=f"New Order #{order.id}",
-                    message=f"You received an order for {item_name}.",
-                    notification_type="ORDER",
-                    email_template="vendors/new_order_received.html",
-                    email_subject="New Order Received!",
-                    email_context={
-                        "vendor_name": seller_name,
-                        "order_id": order.id,
-                        "dashboard_url": "https://jefedo.com/dashboard/orders"
-                    }
+                    user              = vendor["user"],
+                    title             = f"New Order #{order.id}",
+                    message           = f"You received an order for {vendor['item_name']}.",
+                    notification_type = "ORDER",
+                    email_template    = "vendors/new_order_received.html",
+                    email_subject     = "New Order Received! – Jefedo",
+                    email_context     = {
+                        "vendor_name":   vendor["seller_name"],
+                        "order_id":      order.id,
+                        "dashboard_url": "https://jefedo.com/dashboard/orders",
+                    },
                 )
-
-        send_jefedo_email(
-            to_email=order.buyer_email,
-            subject=f"Order Confirmation #{order.id}",
-            template_name="customers/order_confirmation.html",
-            context={
-                "name": order.buyer_name,
-                "order_id": order.id,
-                "items": items_data,
-                "total_amount": str(order.total_amount),
-                "order_url": f"https://jefedo.com/orders/{order.id}"
-            }
-        )
-
-        return {"success": True, "order": order, "transaction": txn}
-
+            except Exception:
+                logger.exception(
+                    "Failed to send vendor notification for order %s to user %s",
+                    order.id, vendor["user"].id,
+                )
+ 
+        # 3. Order confirmation to buyer
+        try:
+            send_jefedo_email(
+                to_email      = order.buyer_email,
+                subject       = f"Order Confirmation #{order.id} – Jefedo",
+                template_name = "customers/order_confirmation.html",
+                context       = {
+                    "name":         order.buyer_name,
+                    "order_id":     order.id,
+                    "items":        result.get("items_data", []),
+                    "total_amount": str(order.total_amount),
+                    "order_url":    f"https://jefedo.com/orders/{order.id}",
+                },
+            )
+        except Exception:
+            logger.exception("Failed to send order-confirmation email for order %s", order.id)
+ 
+    # ── FAILURE email ─────────────────────────────────────────────────────────
     else:
-        txn.status = "FAILED" if gateway_status == "failed" else "ABANDONED"
-        txn.gateway_response = gateway_response
-        txn.save()
-
-        order = txn.order
-        order.status = "CANCELLED"
-        order.save(update_fields=["status"])
-        
-        # -- Trigger Failure Notification to Buyer --
-        from core.email_service import send_jefedo_email
-        send_jefedo_email(
-            to_email=order.buyer_email,
-            subject="Payment Failed",
-            template_name="customers/failed_payment.html",
-            context={
-                "name": order.buyer_name,
-                "order_id": order.id,
-                "amount": str(txn.amount),
-                "error_message": gateway_response or "Payment was abandoned or failed.",
-                "checkout_url": f"https://jefedo.com/checkout/{order.id}"
-            }
-        )
-
-        # Restore product stock on failure
-        if order.order_type == "PRODUCT":
-            for item in order.items.select_related("product").all():
-                if item.product:
-                    item.product.stock_qty += item.quantity
-                    item.product.stock_sold = max(0, item.product.stock_sold - item.quantity)
-                    item.product.save(update_fields=["stock_qty", "stock_sold"])
-
-        return {"success": False, "order": order, "transaction": txn}
+        try:
+            send_jefedo_email(
+                to_email      = order.buyer_email,
+                subject       = "Payment Failed – Jefedo",
+                template_name = "customers/failed_payment.html",
+                context       = {
+                    "name":          order.buyer_name,
+                    "order_id":      order.id,
+                    "amount":        str(txn.amount),
+                    "error_message": result["gateway_response"] or "Payment was abandoned or failed.",
+                    "checkout_url":  f"https://jefedo.com/checkout/{order.id}",
+                },
+            )
+        except Exception:
+            logger.exception("Failed to send payment-failed email for order %s", order.id)
+ 
+    return {
+        "success":     result["success"],
+        "order":       order,
+        "transaction": txn,
+    }
+ 
