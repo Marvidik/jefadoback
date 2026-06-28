@@ -18,4 +18,5 @@ urlpatterns = [
         VerifyPlanPaymentView.as_view(),
         name="verify-plan-payment",
     ),
+    path('paystack/webhook/', PaystackWebhookView.as_view(), name='paystack-webhook'),
 ]
