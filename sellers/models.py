@@ -31,7 +31,7 @@ class SellerProfile(models.Model):
     positive_feedback_pct = models.FloatField(default=0.0)
     shipping_time = models.CharField(max_length=100, default='1-2 Days')
     response_rate_pct = models.FloatField(default=0.0)
-    phone_number=models.CharField(default="08132106194")
+    phone_number=models.CharField(default="08132106194", max_length=15)
     
     is_verified = models.BooleanField(default=False)
     verification_status = models.CharField(max_length=10, choices=VERIFICATION_STATUS_CHOICES, default='PENDING')
