@@ -245,5 +245,5 @@ class ShopServiceSerializer(serializers.ModelSerializer):
         model = Service
         fields = [
             'id', 'name', 'slug', 'price', 'original', 'rating', 
-            'review_count', 'duration', 'image', 'created_at'
+            'review_count', 'duration', 'image', 'image2', 'image3', 'image4', 'created_at'
         ]

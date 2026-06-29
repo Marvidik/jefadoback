@@ -149,6 +149,9 @@ class Service(models.Model):
 
     # Media
     image = models.URLField(blank=True, null=True)
+    image2 = models.URLField(blank=True, null=True)
+    image3 = models.URLField(blank=True, null=True)
+    image4 = models.URLField(blank=True, null=True)
 
     # Status
     status = models.CharField(
