@@ -2,8 +2,8 @@
 
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied
-
 from transactions.models import UserSubscription
+from sellers.models import Product,Service
 
 
 class SellerPlanRequiredMixin:
@@ -102,66 +102,27 @@ class SellerPlanRequiredMixin:
                 "Your current plan does not support this feature."
             )
 
-    def dispatch(self, request, *args, **kwargs):
-
+    def initial(self, request, *args, **kwargs):
+        super().initial(request, *args, **kwargs)
         self.check_plan_feature()
-
-        return super().dispatch(request, *args, **kwargs)
     
-
-
-
-# subscriptions/mixins.py
-
-from rest_framework.exceptions import PermissionDenied
-
-from sellers.models import Product
 
 
 class ProductLimitMixin:
-
     def check_product_limit(self):
-
-        subscription = self.get_active_subscription()
-
         features = self.get_plan_features()
-
         max_products = features.get("max_products")
-
         if max_products is None:
             return
-
         seller = self.request.user.seller_profile
-
-        current_count = Product.objects.filter(
-            seller=seller
-        ).count()
-
-        if current_count >= max_products:
-            raise PermissionDenied(
-                f"Your plan only allows {max_products} products."
-            )
-
-    def perform_create(self, serializer):
-
-        self.check_product_limit()
-
-        return super().perform_create(serializer)
+        if Product.objects.filter(seller=seller).count() >= max_products:
+            raise PermissionDenied(f"Your plan only allows {max_products} products.")
     
-
-
-# subscriptions/mixins.py
-
-from rest_framework.exceptions import PermissionDenied
-
-from sellers.models import Service
 
 
 class ServiceLimitMixin:
 
     def check_service_limit(self):
-
-        subscription = self.get_active_subscription()
 
         features = self.get_plan_features()
 
@@ -180,9 +141,3 @@ class ServiceLimitMixin:
             raise PermissionDenied(
                 f"Your plan only allows {max_services} services."
             )
-
-    def perform_create(self, serializer):
-
-        self.check_service_limit()
-
-        return super().perform_create(serializer)

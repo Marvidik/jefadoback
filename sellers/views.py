@@ -3,6 +3,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
 
+from sellers.mixins import ProductLimitMixin, SellerPlanRequiredMixin, ServiceLimitMixin
 from sellers.services.bankservice import BankAccountService
 from sellers.services.couponservice import CouponService
 from sellers.services.dashboardservices import DashboardService
@@ -28,7 +29,9 @@ from collections import defaultdict
 
 
 
-class ProductListCreateView(generics.ListCreateAPIView):
+class ProductListCreateView(SellerPlanRequiredMixin,
+    ProductLimitMixin,generics.ListCreateAPIView):
+    required_feature = "products"
     serializer_class = ProductSerializer
     permission_classes = [permissions.IsAuthenticated, IsSeller]
     pagination_class = SellerPagination
@@ -81,7 +84,9 @@ class ProductRetrieveUpdateDeleteView(generics.RetrieveUpdateDestroyAPIView):
 
 
 
-class ServiceListCreateView(generics.ListCreateAPIView):
+class ServiceListCreateView(SellerPlanRequiredMixin,
+    ServiceLimitMixin,generics.ListCreateAPIView):
+    required_feature = "services"
     serializer_class = ServiceSerializer
     permission_classes = [permissions.IsAuthenticated, IsSeller]
     pagination_class = SellerPagination
@@ -215,7 +220,8 @@ class UpdateOrderStatusView(APIView):
             "status": order.status
         })
 
-class OrderAnalyticsView(APIView):
+class OrderAnalyticsView(SellerPlanRequiredMixin,APIView):
+    required_feature = "analytics"
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -245,8 +251,9 @@ class ServiceOrderListPageView(generics.ListAPIView):
 
 
 
-class CouponListCreateView(generics.ListCreateAPIView):
+class CouponListCreateView(SellerPlanRequiredMixin,generics.ListCreateAPIView):
 
+    required_feature = "coupons"
     serializer_class = CouponSerializer
     permission_classes = [permissions.IsAuthenticated]
 
