@@ -116,7 +116,7 @@ class ServiceDetailSerializer(serializers.ModelSerializer):
         model = Service
         fields = [
             'id', 'name', 'slug', 'description', 'price', 'original',
-            'duration', 'rating', 'review_count', 'image', 'status',
+            'duration', 'rating', 'review_count', 'image','image2', 'image3', 'image4', 'status',
             'created_at', 'updated_at', 'category',
             'seller', 'reviews', 'rating_stats'
         ]
