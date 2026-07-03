@@ -11,7 +11,13 @@ class OrderAnalyticsService:
     @staticmethod
     def get_base_queryset(seller):
         return Order.objects.filter(
-            items__service__seller=seller,status__in=["COMPLETED","PROCESSING","PAID"]
+            items__service__seller=seller,status__in=[
+            "PAID",
+            "PROCESSING",
+            "SHIPPED",
+            "OUT_FOR_DELIVERY",
+            "COMPLETED",
+        ]
         ).distinct()
 
     # -------------------------

@@ -22,7 +22,13 @@ class DashboardService:
     @staticmethod
     def get_summary_cards(seller):
 
-        orders = Order.objects.filter(items__product__seller=seller).distinct()
+        orders = Order.objects.filter(items__product__seller=seller,status__in=[
+            "PAID",
+            "PROCESSING",
+            "SHIPPED",
+            "OUT_FOR_DELIVERY",
+            "COMPLETED",
+        ],).distinct()
 
         total_revenue = orders.aggregate(
             total=Sum("total_amount")
