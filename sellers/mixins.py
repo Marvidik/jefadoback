@@ -3,7 +3,7 @@
 from django.utils import timezone
 from rest_framework.exceptions import PermissionDenied
 from transactions.models import UserSubscription
-from sellers.models import Product,Service
+from sellers.models import Product, Service
 
 
 class SellerPlanRequiredMixin:
@@ -20,6 +20,9 @@ class SellerPlanRequiredMixin:
     """
 
     required_feature = None
+
+    # Slug used for sellers with no active subscription
+    DEFAULT_PLAN_SLUG = "basic"
 
     PLAN_FEATURES = {
         "basic": {
@@ -62,7 +65,6 @@ class SellerPlanRequiredMixin:
     }
 
     def get_active_subscription(self):
-
         return (
             UserSubscription.objects
             .select_related("plan")
@@ -75,21 +77,23 @@ class SellerPlanRequiredMixin:
             .first()
         )
 
-    def get_plan_features(self):
-
+    def get_plan_slug(self):
+        """
+        Returns the effective plan slug for the current user:
+        their active subscription's plan, or "basic" if none exists.
+        """
         subscription = self.get_active_subscription()
 
         if not subscription:
-            raise PermissionDenied(
-                "You need an active subscription."
-            )
+            return self.DEFAULT_PLAN_SLUG
 
-        slug = subscription.plan.slug
+        return subscription.plan.slug
 
-        return self.PLAN_FEATURES.get(slug, {})
+    def get_plan_features(self):
+        slug = self.get_plan_slug()
+        return self.PLAN_FEATURES.get(slug, self.PLAN_FEATURES[self.DEFAULT_PLAN_SLUG])
 
     def check_plan_feature(self):
-
         if not self.required_feature:
             return
 
@@ -105,7 +109,6 @@ class SellerPlanRequiredMixin:
     def initial(self, request, *args, **kwargs):
         super().initial(request, *args, **kwargs)
         self.check_plan_feature()
-    
 
 
 class ProductLimitMixin:
@@ -117,7 +120,6 @@ class ProductLimitMixin:
         seller = self.request.user.seller_profile
         if Product.objects.filter(seller=seller).count() >= max_products:
             raise PermissionDenied(f"Your plan only allows {max_products} products.")
-    
 
 
 class ServiceLimitMixin:
