@@ -23,6 +23,9 @@ from  transactions.models import Order, OrderItem
 from sellers.models import Product, Service
 from  transactions.models import Transaction, Coupon
 from . import paystack as ps
+import uuid
+from wallets.services import WalletService, InsufficientBalanceError, WalletFrozenError
+
 
 logger = logging.getLogger(__name__)
 
@@ -95,13 +98,107 @@ def _compute_total(resolved_items: list) -> Decimal:
         total += item["unit_price"] * item["quantity"]
     return total
 
+def _generate_wallet_reference() -> str:
+    return f"WALLET-PAY-{uuid.uuid4().hex.upper()[:16]}"
+
+
+def _collect_success_data(order):
+    items_data = []
+    vendor_notifications = []
+
+    for item in order.items.select_related(
+        "product__seller__user", "service__seller__user"
+    ).all():
+        if item.product:
+            item_name = item.product.name
+            seller_user = getattr(item.product.seller, "user", None)
+            seller_name = getattr(item.product.seller, "store_name", "")
+        elif item.service:
+            item_name = item.service.name
+            seller_user = getattr(item.service.seller, "user", None)
+            seller_name = getattr(item.service.seller, "store_name", "")
+        else:
+            item_name = "Unknown item"
+            seller_user = None
+            seller_name = ""
+
+        items_data.append({
+            "name": item_name,
+            "quantity": item.quantity,
+            "price": str(item.price),
+        })
+
+        if seller_user:
+            vendor_notifications.append({
+                "user": seller_user,
+                "item_name": item_name,
+                "seller_name": seller_name,
+            })
+
+    return items_data, vendor_notifications
+
+
+def _send_success_side_effects(order, txn, items_data, vendor_notifications):
+    from core.email_service import send_jefedo_email, send_notification
+
+    try:
+        send_jefedo_email(
+            to_email=order.buyer_email,
+            subject="Payment Successful – Jefedo",
+            template_name="customers/payment_successful.html",
+            context={
+                "name": order.buyer_name,
+                "amount": str(txn.amount_paid or txn.amount),
+                "order_id": order.id,
+            },
+        )
+    except Exception:
+        logger.exception("Failed to send payment-success email for order %s", order.id)
+
+    for vendor in vendor_notifications:
+        try:
+            send_notification(
+                user=vendor["user"],
+                title=f"New Order #{order.id}",
+                message=f"You received an order for {vendor['item_name']}.",
+                notification_type="ORDER",
+                email_template="vendors/new_order_received.html",
+                email_subject="New Order Received! – Jefedo",
+                email_context={
+                    "vendor_name": vendor["seller_name"],
+                    "order_id": order.id,
+                    "dashboard_url": "https://jefedo.com/dashboard/orders",
+                },
+            )
+        except Exception:
+            logger.exception(
+                "Failed to send vendor notification for order %s to user %s",
+                order.id, vendor["user"].id,
+            )
+
+    try:
+        send_jefedo_email(
+            to_email=order.buyer_email,
+            subject=f"Order Confirmation #{order.id} – Jefedo",
+            template_name="customers/order_confirmation.html",
+            context={
+                "name": order.buyer_name,
+                "order_id": order.id,
+                "items": items_data,
+                "total_amount": str(order.total_amount),
+                "order_url": f"https://jefedo.com/orders/{order.id}",
+            },
+        )
+    except Exception:
+        logger.exception("Failed to send order-confirmation email for order %s", order.id)
+
 
 # ─────────────────────────────────────────────────
 #  DB-ONLY WRITES (inside atomic block)
 # ─────────────────────────────────────────────────
 
 @db_transaction.atomic
-def _create_product_order(validated_data, user, resolved, coupon, discount, total) -> tuple:
+def _create_product_order(validated_data, user, resolved, coupon, discount, total, payment_method="paystack") -> tuple:
     """Create Order + OrderItems + Transaction in one atomic DB transaction."""
     order = Order.objects.create(
         buyer=user if user and user.is_authenticated else None,
@@ -136,19 +233,32 @@ def _create_product_order(validated_data, user, resolved, coupon, discount, tota
         coupon.used_count += 1
         coupon.save(update_fields=["used_count"])
 
-    reference = ps.generate_reference()
-    txn = Transaction.objects.create(
-        order=order,
-        reference=reference,
-        amount=total,
-        currency="NGN",
-    )
+    if payment_method == "wallet":
+        reference = _generate_wallet_reference()
+        txn = Transaction.objects.create(
+            order=order,
+            reference=reference,
+            amount=total,
+            currency="NGN",
+            status="SUCCESS",
+            amount_paid=total,
+        )
+        order.status = "PAID"
+        order.save(update_fields=["status"])
+    else:
+        reference = ps.generate_reference()
+        txn = Transaction.objects.create(
+            order=order,
+            reference=reference,
+            amount=total,
+            currency="NGN",
+        )
 
     return order, txn, reference
 
 
 @db_transaction.atomic
-def _create_service_order(validated_data, user, resolved, coupon, discount, total) -> tuple:
+def _create_service_order(validated_data, user, resolved, coupon, discount, total,payment_method="paystack") -> tuple:
     """Create Order + OrderItems + Transaction for a service booking."""
     order = Order.objects.create(
         buyer=user if user and user.is_authenticated else None,
@@ -177,13 +287,26 @@ def _create_service_order(validated_data, user, resolved, coupon, discount, tota
         coupon.used_count += 1
         coupon.save(update_fields=["used_count"])
 
-    reference = ps.generate_reference()
-    txn = Transaction.objects.create(
-        order=order,
-        reference=reference,
-        amount=total,
-        currency="NGN",
-    )
+    if payment_method == "wallet":
+        reference = _generate_wallet_reference()
+        txn = Transaction.objects.create(
+            order=order,
+            reference=reference,
+            amount=total,
+            currency="NGN",
+            status="SUCCESS",
+            amount_paid=total,
+        )
+        order.status = "PAID"
+        order.save(update_fields=["status"])
+    else:
+        reference = ps.generate_reference()
+        txn = Transaction.objects.create(
+            order=order,
+            reference=reference,
+            amount=total,
+            currency="NGN",
+        )
 
     return order, txn, reference
 
@@ -193,27 +316,67 @@ def _create_service_order(validated_data, user, resolved, coupon, discount, tota
 # ─────────────────────────────────────────────────
 
 def initiate_product_checkout(validated_data: dict, user=None) -> dict:
-    """
-    Full product checkout flow.
-    DB writes happen first (atomic), then Paystack is called.
-    If Paystack fails, the order stays PENDING — it can be retried.
-    """
     raw_items = validated_data["items"]
     coupon_code = validated_data.get("coupon_code", "")
+    payment_method = validated_data.get("payment_method", "paystack")
 
-    # 1. Validate
     resolved = _resolve_product_items(raw_items)
     seller_id = resolved[0]["product"].seller_id
     subtotal = _compute_total(resolved)
     coupon, discount = _apply_coupon(coupon_code, seller_id, subtotal)
     total = subtotal - discount
 
-    # 2. Write to DB (atomic — if this fails nothing is saved)
+    if payment_method == "wallet":
+        if not user or not user.is_authenticated:
+            raise ValueError("Wallet payment requires an authenticated user.")
+
+        wallet = WalletService.get_or_create_wallet(user)
+
+        if wallet.status != "ACTIVE":
+            raise ValueError(f"Wallet is {wallet.status.lower()}; cannot pay.")
+        if wallet.balance < total:
+            raise ValueError(
+                f"Insufficient wallet balance. Available: {wallet.balance}, required: {total}."
+            )
+
+        with db_transaction.atomic():
+            order, txn, reference = _create_product_order(
+                validated_data, user, resolved, coupon, discount, total,
+                payment_method="wallet",
+            )
+            try:
+                WalletService.debit(
+                    wallet=wallet,
+                    amount=total,
+                    type="PURCHASE",
+                    reference=reference,
+                    order=order,
+                    description=f"Payment for Order #{order.id}",
+                    metadata={"order_id": order.id, "order_type": "PRODUCT"},
+                )
+            except InsufficientBalanceError:
+                raise ValueError("Insufficient wallet balance.")
+            except WalletFrozenError as e:
+                raise ValueError(str(e))
+
+        items_data, vendor_notifications = _collect_success_data(order)
+        _send_success_side_effects(order, txn, items_data, vendor_notifications)
+
+        return {
+            "order": order,
+            "transaction": txn,
+            "payment_url": None,
+            "reference": reference,
+            "access_code": None,
+            "payment_method": "wallet",
+        }
+
+    # Paystack path
     order, txn, reference = _create_product_order(
-        validated_data, user, resolved, coupon, discount, total
+        validated_data, user, resolved, coupon, discount, total,
+        payment_method="paystack",
     )
 
-    # 3. Call Paystack (outside atomic — network failure won't roll back DB)
     metadata = {
         "order_id": order.id,
         "order_type": "PRODUCT",
@@ -232,30 +395,72 @@ def initiate_product_checkout(validated_data: dict, user=None) -> dict:
         "payment_url": ps_data["authorization_url"],
         "reference": reference,
         "access_code": ps_data["access_code"],
+        "payment_method": "paystack",
     }
 
 
 def initiate_service_checkout(validated_data: dict, user=None) -> dict:
-    """
-    Full service booking checkout flow.
-    DB writes happen first (atomic), then Paystack is called.
-    """
     raw_items = validated_data["items"]
     coupon_code = validated_data.get("coupon_code", "")
+    payment_method = validated_data.get("payment_method", "paystack")
 
-    # 1. Validate
     resolved = _resolve_service_items(raw_items)
     seller_id = resolved[0]["service"].seller_id
     subtotal = _compute_total(resolved)
     coupon, discount = _apply_coupon(coupon_code, seller_id, subtotal)
     total = subtotal - discount
 
-    # 2. Write to DB (atomic)
+    if payment_method == "wallet":
+        if not user or not user.is_authenticated:
+            raise ValueError("Wallet payment requires an authenticated user.")
+
+        wallet = WalletService.get_or_create_wallet(user)
+
+        if wallet.status != "ACTIVE":
+            raise ValueError(f"Wallet is {wallet.status.lower()}; cannot pay.")
+        if wallet.balance < total:
+            raise ValueError(
+                f"Insufficient wallet balance. Available: {wallet.balance}, required: {total}."
+            )
+
+        with db_transaction.atomic():
+            order, txn, reference = _create_service_order(
+                validated_data, user, resolved, coupon, discount, total,
+                payment_method="wallet",
+            )
+            try:
+                WalletService.debit(
+                    wallet=wallet,
+                    amount=total,
+                    type="PURCHASE",
+                    reference=reference,
+                    order=order,
+                    description=f"Payment for Order #{order.id}",
+                    metadata={"order_id": order.id, "order_type": "SERVICE"},
+                )
+            except InsufficientBalanceError:
+                raise ValueError("Insufficient wallet balance.")
+            except WalletFrozenError as e:
+                raise ValueError(str(e))
+
+        items_data, vendor_notifications = _collect_success_data(order)
+        _send_success_side_effects(order, txn, items_data, vendor_notifications)
+
+        return {
+            "order": order,
+            "transaction": txn,
+            "payment_url": None,
+            "reference": reference,
+            "access_code": None,
+            "payment_method": "wallet",
+        }
+
+    # Paystack path
     order, txn, reference = _create_service_order(
-        validated_data, user, resolved, coupon, discount, total
+        validated_data, user, resolved, coupon, discount, total,
+        payment_method="paystack",
     )
 
-    # 3. Call Paystack
     metadata = {
         "order_id": order.id,
         "order_type": "SERVICE",
@@ -276,6 +481,7 @@ def initiate_service_checkout(validated_data: dict, user=None) -> dict:
         "payment_url": ps_data["authorization_url"],
         "reference": reference,
         "access_code": ps_data["access_code"],
+        "payment_method": "paystack",
     }
 
 

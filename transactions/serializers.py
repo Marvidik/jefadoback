@@ -62,11 +62,29 @@ class ProductCheckoutSerializer(serializers.Serializer):
 
     items = CheckoutItemInputSerializer(many=True)
     coupon_code = serializers.CharField(required=False, allow_blank=True)
+    
+
+    payment_method = serializers.ChoiceField(
+        choices=["paystack", "wallet"],
+        default="paystack",
+        required=False,
+        help_text="Payment method: 'paystack' (default) or 'wallet' (authenticated users only)",
+    )
 
     def validate_items(self, items):
         if not items:
             raise serializers.ValidationError("At least one item is required.")
         return items
+
+    def validate(self, data):
+        payment_method = data.get("payment_method", "paystack")
+        if payment_method == "wallet":
+            request = self.context.get("request")
+            if not request or not getattr(request.user, "is_authenticated", False):
+                raise serializers.ValidationError({
+                    "payment_method": "Wallet payment requires an authenticated user."
+                })
+        return data
 
 
 class ServiceCheckoutSerializer(serializers.Serializer):
@@ -83,6 +101,14 @@ class ServiceCheckoutSerializer(serializers.Serializer):
 
     items = CheckoutItemInputSerializer(many=True)
     coupon_code = serializers.CharField(required=False, allow_blank=True)
+   
+
+    payment_method = serializers.ChoiceField(
+        choices=["paystack", "wallet"],
+        default="paystack",
+        required=False,
+        help_text="Payment method: 'paystack' (default) or 'wallet' (authenticated users only)",
+    )
 
     def validate_items(self, items):
         if not items:
@@ -94,6 +120,16 @@ class ServiceCheckoutSerializer(serializers.Serializer):
         if value < date.today():
             raise serializers.ValidationError("Booking date cannot be in the past.")
         return value
+
+    def validate(self, data):
+        payment_method = data.get("payment_method", "paystack")
+        if payment_method == "wallet":
+            request = self.context.get("request")
+            if not request or not getattr(request.user, "is_authenticated", False):
+                raise serializers.ValidationError({
+                    "payment_method": "Wallet payment requires an authenticated user."
+                })
+        return data
 
 
 # ─────────────────────────────────────────

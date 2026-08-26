@@ -118,7 +118,7 @@ class ProductCheckoutView(APIView):
         ],
     )
     def post(self, request):
-        serializer = ProductCheckoutSerializer(data=request.data)
+        serializer = ProductCheckoutSerializer(data=request.data, context={"request": request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -145,6 +145,8 @@ class ProductCheckoutView(APIView):
                 "access_code": result["access_code"],
                 "total_amount": str(order.total_amount),
                 "discount_amount": str(order.discount_amount),
+                "payment_method": result.get("payment_method", "paystack"),
+                "status": order.status,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -223,7 +225,7 @@ class ServiceCheckoutView(APIView):
         ],
     )
     def post(self, request):
-        serializer = ServiceCheckoutSerializer(data=request.data)
+        serializer = ServiceCheckoutSerializer(data=request.data, context={"request": request})
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -250,6 +252,8 @@ class ServiceCheckoutView(APIView):
                 "discount_amount": str(order.discount_amount),
                 "booking_date": str(order.booking_date),
                 "booking_time": str(order.booking_time),
+                "payment_method": result.get("payment_method", "paystack"),
+                "status": order.status,
             },
             status=status.HTTP_201_CREATED,
         )
