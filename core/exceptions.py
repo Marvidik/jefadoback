@@ -28,3 +28,35 @@ def core_exception_handler(exc, context):
         }
 
     return response
+
+
+
+
+def custom_exception_handler(exc, context):
+    response = exception_handler(exc, context)
+
+    if response is None:
+        return response
+
+    # Flatten DRF's default error shapes into a single message + data payload
+    data = response.data
+    message = "Validation Error"
+
+    if isinstance(data, dict):
+        if "detail" in data:
+            message = str(data["detail"])
+            data = {}
+        elif "non_field_errors" in data:
+            errors = data["non_field_errors"]
+            message = errors[0] if isinstance(errors, list) else str(errors)
+            data = {k: v for k, v in data.items() if k != "non_field_errors"}
+    elif isinstance(data, list):
+        message = data[0] if data else "Error"
+        data = {}
+
+    response.data = {
+        "status": response.status_code,
+        "message": message,
+        "data": data,
+    }
+    return response

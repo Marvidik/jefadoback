@@ -2,10 +2,12 @@
 from django.urls import path
 from .views import (
     UserOrderListView, UserProfileView, AddressListCreateView, AddressDetailView, SetDefaultAddressView,
-    WishlistListView, WishlistAddView, ChangePasswordView, WishlistRemoveView
+    WishlistListView, WishlistAddView, ChangePasswordView, WishlistRemoveView,VerifyLoginOTPView,TwoFactorToggleView
 )
 
 urlpatterns = [
+    path('two-factor/toggle/', TwoFactorToggleView.as_view(), name='two-factor-toggle'),
+
     # Profile
     path('profile/', UserProfileView.as_view(), name='user-profile'),
 

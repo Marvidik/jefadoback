@@ -21,6 +21,71 @@ from django.contrib.auth import get_user_model
 User = get_user_model()
 
 
+from dj_rest_auth.views import LoginView as BaseLoginView
+from .serializers import LoginOTPVerifySerializer
+from .services import AuthService
+
+
+class CustomLoginView(BaseLoginView):
+    """
+    Wraps dj-rest-auth's LoginView. If the authenticated user has
+    2FA enabled, we short-circuit before issuing a token and send
+    an OTP instead.
+    """
+    def post(self, request, *args, **kwargs):
+        self.request = request
+        self.serializer = self.get_serializer(data=self.request.data)
+        self.serializer.is_valid(raise_exception=True)
+
+        user = self.serializer.validated_data['user']
+
+        if getattr(user, 'two_factor_enabled', False):
+            AuthService.create_and_send_login_otp(user)
+            return Response({
+                "detail": "A verification code has been sent to your email.",
+                "two_factor_required": True,
+                "email": user.email,
+            }, status=status.HTTP_200_OK)
+
+        self.login()
+        return self.get_response()
+
+
+class VerifyLoginOTPView(BaseLoginView):
+    """
+    Second step of 2FA login. Takes email + otp, and on success
+    issues the same token/session dj-rest-auth's normal login would.
+    """
+    def post(self, request, *args, **kwargs):
+        self.request = request
+        self.serializer = LoginOTPVerifySerializer(data=request.data)
+        self.serializer.is_valid(raise_exception=True)
+
+        self.login()
+        return self.get_response()
+
+
+class TwoFactorToggleView(generics.GenericAPIView):
+    """
+    Lets a logged-in user turn 2FA on/off from account settings.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        enabled = request.data.get('enabled')
+        if enabled is None:
+            return Response({"detail": "'enabled' (true/false) is required."}, status=400)
+
+        user = request.user
+        user.two_factor_enabled = bool(enabled)
+        user.save(update_fields=['two_factor_enabled'])
+
+        return Response({
+            "detail": f"Two-factor authentication {'enabled' if user.two_factor_enabled else 'disabled'}.",
+            "two_factor_enabled": user.two_factor_enabled,
+        })
+
+
 @extend_schema(
     request=PasswordResetRequestSerializer,
     responses={200: {"message": "OTP sent"}}

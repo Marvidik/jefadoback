@@ -26,6 +26,27 @@ class CustomLoginSerializer(LoginSerializer):
     email = serializers.EmailField(required=True)
 
 
+
+class LoginOTPVerifySerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    otp = serializers.CharField(max_length=6)
+
+    def validate(self, attrs):
+        from django.contrib.auth import get_user_model
+        from .services import AuthService
+        User = get_user_model()
+
+        user = User.objects.filter(email__iexact=attrs['email']).first()
+        if not user:
+            raise serializers.ValidationError("Invalid credentials.")
+
+        is_valid, error = AuthService.verify_login_otp(user, attrs['otp'])
+        if not is_valid:
+            raise serializers.ValidationError(error)
+
+        attrs['user'] = user
+        return attrs
+
 class CustomRegisterSerializer(RegisterSerializer):
     first_name = serializers.CharField(max_length=150, required=False, allow_blank=True)
     last_name = serializers.CharField(max_length=150, required=False, allow_blank=True)

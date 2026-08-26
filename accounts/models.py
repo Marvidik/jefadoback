@@ -37,6 +37,7 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='CUSTOMER')
     phone = models.CharField(max_length=15, blank=True, null=True)
+    two_factor_enabled = models.BooleanField(default=False)
 
     objects = UserManager()
 
@@ -47,6 +48,17 @@ class User(AbstractUser):
         return self.email
 
 
+class LoginOTP(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='login_otps')
+    otp = models.CharField(max_length=6)
+    is_used = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"LoginOTP({self.user.email})"
 
 
 class UserProfile(models.Model):

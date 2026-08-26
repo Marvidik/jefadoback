@@ -21,12 +21,16 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, Spec
 from django.conf import settings
 from django.conf.urls.static import static
 
-from accounts.views import RequestPasswordResetOTPView,ConfirmPasswordResetOTPView
+from accounts.views import RequestPasswordResetOTPView,ConfirmPasswordResetOTPView,VerifyLoginOTPView
+
+from accounts.views import CustomLoginView   # add this import
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     
     # API V1
+    path('api/v1/auth/login/', CustomLoginView.as_view(), name='rest_login'),  
+    path('api/v1/auth/login/verify-otp/', VerifyLoginOTPView.as_view(), name='verify-login-otp'),
     path('api/v1/auth/', include('dj_rest_auth.urls')),
     path('api/v1/auth/registration/', include('dj_rest_auth.registration.urls')),
     path("api/v1/auth/password/reset/request/", RequestPasswordResetOTPView.as_view()),
@@ -39,8 +43,7 @@ urlpatterns = [
     # Schema and Documentation
     path('swagger/', RedirectView.as_view(url='/api/v1/schema/swagger-ui/', permanent=True)),
     path('api/v1/schema/', SpectacularAPIView.as_view(), name='schema'),
-    path('api/v1/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
-    path('api/v1/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+    path('api/v1/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='redoc'),
 ]
 
 if settings.DEBUG:
