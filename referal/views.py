@@ -113,3 +113,35 @@ class MyReferralListView(generics.ListAPIView):
             )
             .order_by("-created_at")
         )
+
+
+class MyReferrerView(APIView):
+    """
+    Returns the person who referred the logged-in user.
+    Returns null if the user was not referred by anyone.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        responses={
+            200: ReferralSerializer,          # or a smaller serializer if you prefer
+            204: OpenApiResponse(description="No referrer found"),
+        }
+    )
+    def get(self, request):
+        try:
+            referral = (
+                Referral.objects
+                .select_related("referrer")
+                .get(referred_user=request.user)
+            )
+        except Referral.DoesNotExist:
+            return Response(
+                {"referrer": None},
+                status=status.HTTP_200_OK,
+            )
+
+        return Response(
+            ReferralSerializer(referral).data,
+            status=status.HTTP_200_OK,
+        )

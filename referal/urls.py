@@ -5,6 +5,7 @@ from .views import (
     MyReferralCodeView,
     MyReferralListView,
     MyReferralStatsView,
+    MyReferrerView,
 )
 
 
@@ -29,4 +30,9 @@ urlpatterns = [
         MyReferralListView.as_view(),
         name="my-referral-list",
     ),
+    path(
+        "me/referer/",
+        MyReferrerView.as_view(),
+        name="referer-info"
+    )
 ]
