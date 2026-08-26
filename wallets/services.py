@@ -125,6 +125,13 @@ class WalletService:
         txn.balance_before = balance_before
         txn.balance_after = balance_after
         txn.save(update_fields=["status", "balance_before", "balance_after", "updated_at"])
+
+        from referal.services import ReferralService
+
+        ReferralService.check_and_qualify(
+            user=wallet.user,
+        )
+
         return txn
 
     @staticmethod

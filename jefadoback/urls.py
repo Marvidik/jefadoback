@@ -40,6 +40,7 @@ urlpatterns = [
     path('api/v1/accounts/', include('accounts.urls')),
     path('api/v1/transactions/', include('transactions.urls')),
     path('api/v1/wallets/',include('wallets.urls')),
+    path("api/v1/referrals/", include("referal.urls")),
     
     # Schema and Documentation
     path('swagger/', RedirectView.as_view(url='/api/v1/schema/swagger-ui/', permanent=True)),

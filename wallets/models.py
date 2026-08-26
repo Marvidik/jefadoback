@@ -36,6 +36,7 @@ class WalletTransaction(models.Model):
         ("REFUND", "Refund"),
         ("WITHDRAWAL", "Withdrawal"),
         ("ADMIN_ADJUSTMENT", "Admin Adjustment"),
+        ("REFERRAL_REWARD", "Referral Reward"),
     )
     DIRECTION_CHOICES = (("CREDIT", "Credit"), ("DEBIT", "Debit"))
     STATUS_CHOICES = (

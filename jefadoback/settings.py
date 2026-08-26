@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'sellers',
     'transactions',
     'wallets',
+    "referal",
 ]
 
 SITE_ID = 1
