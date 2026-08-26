@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from transactions.models import Order, OrderItem
-from .models import User
+from .models import Notification, User
 from sellers.models import SellerProfile
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from django.db import transaction
@@ -276,3 +276,15 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
 
 class PasswordResetRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
+
+
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = [
+            'id', 'title', 'message', 'notification_type',
+            'is_read', 'created_at'
+        ]
+        read_only_fields = fields

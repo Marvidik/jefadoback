@@ -1,7 +1,7 @@
 # urls.py
 from django.urls import path
 from .views import (
-    UserOrderListView, UserProfileView, AddressListCreateView, AddressDetailView, SetDefaultAddressView,
+    NotificationListView,NotificationMarkAllReadView, NotificationMarkReadView, UnreadNotificationCountView, UserOrderListView, UserProfileView, AddressListCreateView, AddressDetailView, SetDefaultAddressView,
     WishlistListView, WishlistAddView, ChangePasswordView, WishlistRemoveView,VerifyLoginOTPView,TwoFactorToggleView
 )
 
@@ -25,4 +25,11 @@ urlpatterns = [
     path('change-password/', ChangePasswordView.as_view(), name='change-password'),
 
     path('orders/', UserOrderListView.as_view(), name='user-orders'),
+
+
+    #notification
+    path('notifications/', NotificationListView.as_view(), name='notification-list'),
+    path('notifications/unread-count/', UnreadNotificationCountView.as_view(), name='notification-unread-count'),
+    path('notifications/mark-all-read/', NotificationMarkAllReadView.as_view(), name='notification-mark-all-read'),
+    path('notifications/<int:pk>/mark-read/', NotificationMarkReadView.as_view(), name='notification-mark-read'),
 ]

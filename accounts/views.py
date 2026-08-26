@@ -7,8 +7,8 @@ from django.contrib.auth.hashers import check_password
 from accounts.services import AuthService
 from public.pagination import PublicPagination
 from transactions.models import Order
-from .models import PasswordResetOTP, UserProfile, Address, Wishlist
-from .serializers import ChangePasswordSerializer, PasswordResetConfirmSerializer, PasswordResetRequestSerializer, UserProfileSerializer, AddressSerializer, WishlistAddSerializer, WishlistSerializer,OrderSerializer
+from .models import Notification, PasswordResetOTP, UserProfile, Address, Wishlist
+from .serializers import ChangePasswordSerializer, NotificationSerializer, PasswordResetConfirmSerializer, PasswordResetRequestSerializer, UserProfileSerializer, AddressSerializer, WishlistAddSerializer, WishlistSerializer,OrderSerializer
 from rest_framework import generics, permissions, filters
 from django_filters.rest_framework import DjangoFilterBackend
 
@@ -281,3 +281,71 @@ class UserOrderListView(generics.ListAPIView):
         return Order.objects.filter(
             buyer=self.request.user
         ).prefetch_related('items').select_related('buyer')
+
+
+
+
+
+#Notification Section
+
+class NotificationListView(generics.ListAPIView):
+    """
+    Lists the authenticated user's notifications, most recent first.
+    Supports ?is_read=true/false and ?notification_type=ORDER etc.
+    """
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = PublicPagination
+
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['is_read', 'notification_type']
+
+    def get_queryset(self):
+        return Notification.objects.filter(user=self.request.user)
+
+
+class NotificationMarkAllReadView(generics.GenericAPIView):
+    """
+    Marks every unread notification belonging to the user as read.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        updated = Notification.objects.filter(
+            user=request.user, is_read=False
+        ).update(is_read=True)
+
+        return Response({
+            "detail": "All notifications marked as read.",
+            "updated_count": updated,
+        }, status=status.HTTP_200_OK)
+
+
+class NotificationMarkReadView(generics.GenericAPIView):
+    """
+    Marks a single notification as read.
+    Handy for 'mark as read on click' in the frontend.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            notification = Notification.objects.get(pk=pk, user=request.user)
+        except Notification.DoesNotExist:
+            return Response({"detail": "Notification not found."}, status=status.HTTP_404_NOT_FOUND)
+
+        notification.is_read = True
+        notification.save(update_fields=['is_read'])
+
+        return Response({"detail": "Notification marked as read."}, status=status.HTTP_200_OK)
+
+
+class UnreadNotificationCountView(generics.GenericAPIView):
+    """
+    Quick badge-count endpoint — cheap to call frequently (e.g. on app load, polling).
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        count = Notification.objects.filter(user=request.user, is_read=False).count()
+        return Response({"unread_count": count}, status=status.HTTP_200_OK)
