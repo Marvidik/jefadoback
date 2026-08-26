@@ -86,6 +86,18 @@ class TwoFactorToggleView(generics.GenericAPIView):
         })
 
 
+class TwoFactorStatusView(generics.GenericAPIView):
+    """
+    Returns the current 2FA status for the logged-in user.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        return Response({
+            "two_factor_enabled": request.user.two_factor_enabled,
+        })
+
+
 @extend_schema(
     request=PasswordResetRequestSerializer,
     responses={200: {"message": "OTP sent"}}

@@ -1,12 +1,13 @@
 # urls.py
 from django.urls import path
 from .views import (
-    NotificationListView,NotificationMarkAllReadView, NotificationMarkReadView, UnreadNotificationCountView, UserOrderListView, UserProfileView, AddressListCreateView, AddressDetailView, SetDefaultAddressView,
+    NotificationListView,NotificationMarkAllReadView, NotificationMarkReadView, TwoFactorStatusView, UnreadNotificationCountView, UserOrderListView, UserProfileView, AddressListCreateView, AddressDetailView, SetDefaultAddressView,
     WishlistListView, WishlistAddView, ChangePasswordView, WishlistRemoveView,VerifyLoginOTPView,TwoFactorToggleView
 )
 
 urlpatterns = [
     path('two-factor/toggle/', TwoFactorToggleView.as_view(), name='two-factor-toggle'),
+    path("2fa/status/", TwoFactorStatusView.as_view(), name="two-factor-status"),
 
     # Profile
     path('profile/', UserProfileView.as_view(), name='user-profile'),
