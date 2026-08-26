@@ -459,9 +459,17 @@ class PaystackWebhookView(APIView):
         # Handle both success and failure events.
         # Calling handle_payment_verification will automatically trigger all configured 
         # success/failure emails and vendor notifications!
+        # in PaystackWebhookView.post(), replace the existing block:
         if event in ["charge.success", "charge.failed"] and reference:
             try:
-                checkout_service.handle_payment_verification(reference)
+                if reference.startswith("WLT-"):
+                    from wallets.services import WalletService
+                    if event == "charge.success":
+                        WalletService.complete_funding(reference)
+                    else:
+                        WalletService.fail_funding(reference, reason="Paystack reported charge.failed")
+                else:
+                    checkout_service.handle_payment_verification(reference)
             except Exception:
                 logger.exception("Webhook verification failed for reference: %s", reference)
 
