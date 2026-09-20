@@ -136,7 +136,7 @@ class OrderAnalyticsService:
                     "name": order.buyer_name,
                     "order_id": order.id,
                     "tracking_number": tracking_number,
-                    "tracking_url": f"https://jefedo.com/orders/{order.id}/track"
+                    "tracking_url": f"https://jefedo.com/orders/"
                 }
             )
         elif new_status == "OUT_FOR_DELIVERY" and order.buyer:
@@ -163,7 +163,7 @@ class OrderAnalyticsService:
                 email_context={
                     "name": order.buyer_name,
                     "order_id": order.id,
-                    "review_url": f"https://jefedo.com/orders/{order.id}/review"
+                    "review_url": f"https://jefedo.com/orders/"
                 }
             )
 

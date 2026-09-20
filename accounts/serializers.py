@@ -128,7 +128,7 @@ class CustomRegisterSerializer(RegisterSerializer):
                 "name": name,
                 "is_seller": user_type == 'SELLER',
                 "dashboard_url": "https://jefedo.com/dashboard",
-                "shop_url": "https://jefedo.com/shop"
+                "shop_url": "https://jefedo.com/"
             }
         )
 
