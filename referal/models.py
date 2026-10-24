@@ -23,6 +23,7 @@ class ReferralCode(models.Model):
 class Referral(models.Model):
     class Status(models.TextChoices):
         PENDING = "PENDING", "Pending"
+        REVIEW = "REVIEW", "Review"
         QUALIFIED = "QUALIFIED", "Qualified"
         REWARDED = "REWARDED", "Rewarded"
         REJECTED = "REJECTED", "Rejected"
@@ -41,7 +42,7 @@ class Referral(models.Model):
         related_name="referral_received",
     )
 
-    code = models.ForeignKey(
+    referral_code = models.ForeignKey(
         ReferralCode,
         on_delete=models.PROTECT,
         related_name="referrals",
@@ -56,6 +57,8 @@ class Referral(models.Model):
     # Useful fraud/audit information
     signup_ip = models.GenericIPAddressField(null=True, blank=True)
     signup_user_agent = models.TextField(blank=True)
+    risk_score = models.PositiveIntegerField(default=0)
+    risk_reasons = models.JSONField(default=list, blank=True)
 
     qualified_at = models.DateTimeField(null=True, blank=True)
     rewarded_at = models.DateTimeField(null=True, blank=True)
